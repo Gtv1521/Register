@@ -1,0 +1,29 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
+
+namespace FrameworkDriver_Api.Models
+{
+    public class RegisterModel
+    {
+        [BsonId]
+        [BsonRepresentation(BsonType.ObjectId)]
+        public string Id { get; set; }
+        [BsonRepresentation(BsonType.ObjectId)]
+        public string IdClient { get; set; }
+        public Status StatusRegister { get; set; } // estado del registro
+        public DateTime CreatedAt { get; set; } // fecha de creacion el dia que se recive el/los equipos
+
+    }
+
+    public enum Status
+    {
+        Pending,
+        InProgress,
+        Completed,
+        Cancelled
+    }
+}
