@@ -15,9 +15,9 @@ namespace FrameworkDriver_Api.Utils
         {
             try
             {
-                if (settings.Value.ConnectionString != null && settings.Value.DatabaseName != null)
+                if (settings.Value.DefaultConnection != null && settings.Value.DatabaseName != null)
                 {
-                    var client = new MongoClient(settings.Value.ConnectionString);
+                    var client = new MongoClient(settings.Value.DefaultConnection);
                     _database = client.GetDatabase(settings.Value.DatabaseName);
                 }
 

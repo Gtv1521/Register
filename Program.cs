@@ -1,4 +1,9 @@
 using FrameworkDriver_Api.Models;
+using FrameworkDriver_Api.src.Interfaces;
+using FrameworkDriver_Api.src.Models;
+using FrameworkDriver_Api.src.Repositories;
+using FrameworkDriver_Api.src.Services;
+using FrameworkDriver_Api.Utils;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -7,8 +12,29 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.Configure<DataContext>(builder.Configuration.GetSection("ConnectionStrings"));
 
 // iniciacion de servicios externos
-builder.Services.AddScoped<DataContext>();
+builder.Services.AddScoped<Context>();
 
+// // add services for Services
+// // builder.Services.AddScoped<ClientService>();
+builder.Services.AddScoped<UserService>();
+// // builder.Services.AddScoped<RegisterService>();
+// // builder.Services.AddScoped<ObservationService>();
+
+// //  add repositories
+// builder.Services.AddScoped<ClientRepository>();
+// builder.Services.AddScoped<UserRepository>();
+// builder.Services.AddScoped<RegisterRepository>();
+// builder.Services.AddScoped<ObservationRepository>();
+
+//  add services for repositories
+builder.Services.AddScoped<ICrud<ClientModel>, ClientRepository>();
+builder.Services.AddScoped<ICrud<UserModel>, UserRepository>();
+builder.Services.AddScoped<ICrud<RegisterModel>, RegisterRepository>();
+builder.Services.AddScoped<ICrud<ObservationModel>, ObservationRepository>();
+
+
+
+// add services for controllers
 builder.Services.AddControllers();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle

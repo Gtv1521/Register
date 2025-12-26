@@ -8,7 +8,7 @@ namespace FrameworkDriver_Api.Models
 {
     public class DataContext
     {
-        public string ConnectionString { get; set; }
+        public string DefaultConnection { get; set; }
         public string DatabaseName { get; set; }
     }
 }
