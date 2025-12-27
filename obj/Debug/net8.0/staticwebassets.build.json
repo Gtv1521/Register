@@ -1,11 +1,1 @@
-{
-  "Version": 1,
-  "Hash": "mcG3v3yD4I2AGwXr/2tq4Z/8s+rq/Cx8kHW/fBX8f1A=",
-  "Source": "FrameworkDriver-Api",
-  "BasePath": "_content/FrameworkDriver-Api",
-  "Mode": "Default",
-  "ManifestType": "Build",
-  "ReferencedProjectsConfiguration": [],
-  "DiscoveryPatterns": [],
-  "Assets": []
-}
+{"Version":1,"Hash":"bAaHQOvac5XUatM+Vw/NFsjzV87CF82N+gFpgulgmmo=","Source":"FrameworkDriver-Api","BasePath":"/","Mode":"Root","ManifestType":"Build","ReferencedProjectsConfiguration":[],"DiscoveryPatterns":[],"Assets":[],"Endpoints":[]}

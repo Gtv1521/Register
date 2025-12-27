@@ -48,7 +48,7 @@ namespace FrameworkDriver_Api.src.Repositories
 
         public async Task<UserModel> GetByIdAsync(string id)
         {
-            return  await _users.Find(user => user.Id == id).FirstOrDefaultAsync();
+            return await _users.Find(user => user.Id == id).FirstOrDefaultAsync();
         }
 
         public async Task<bool> UpdateAsync(string id, UserModel item)

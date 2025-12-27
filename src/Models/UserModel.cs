@@ -11,9 +11,9 @@ namespace FrameworkDriver_Api.src.Models
     {
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
-        public string Id { get; set; }
-        public string name { get; set; }
-        public string email { get; set; }
+        public string Id { get; set; } = null!;
+        public string name { get; set; } = null!;
+        public string email { get; set; } = null!;
         public int pin { get; set; } // pin de inicio de sesion
     }
 }

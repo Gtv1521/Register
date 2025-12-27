@@ -1,20 +1,20 @@
 {
   "format": 1,
   "restore": {
-    "/home/gustavo/Desarrollo/C#/FrameworkDriver-Api/FrameworkDriver-Api.csproj": {}
+    "/home/dvn/Documents/Development/C# .Net/Proyectos personales/Register/FrameworkDriver-Api.csproj": {}
   },
   "projects": {
-    "/home/gustavo/Desarrollo/C#/FrameworkDriver-Api/FrameworkDriver-Api.csproj": {
+    "/home/dvn/Documents/Development/C# .Net/Proyectos personales/Register/FrameworkDriver-Api.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/home/gustavo/Desarrollo/C#/FrameworkDriver-Api/FrameworkDriver-Api.csproj",
+        "projectUniqueName": "/home/dvn/Documents/Development/C# .Net/Proyectos personales/Register/FrameworkDriver-Api.csproj",
         "projectName": "FrameworkDriver-Api",
-        "projectPath": "/home/gustavo/Desarrollo/C#/FrameworkDriver-Api/FrameworkDriver-Api.csproj",
-        "packagesPath": "/home/gustavo/.nuget/packages/",
-        "outputPath": "/home/gustavo/Desarrollo/C#/FrameworkDriver-Api/obj/",
+        "projectPath": "/home/dvn/Documents/Development/C# .Net/Proyectos personales/Register/FrameworkDriver-Api.csproj",
+        "packagesPath": "/home/dvn/.nuget/packages/",
+        "outputPath": "/home/dvn/Documents/Development/C# .Net/Proyectos personales/Register/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "/home/gustavo/.nuget/NuGet/NuGet.Config"
+          "/home/dvn/.nuget/NuGet/NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net8.0"
@@ -32,12 +32,22 @@
           "warnAsError": [
             "NU1605"
           ]
-        }
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "10.0.100"
       },
       "frameworks": {
         "net8.0": {
           "targetAlias": "net8.0",
           "dependencies": {
+            "CloudinaryDotNet": {
+              "target": "Package",
+              "version": "[1.27.9, )"
+            },
             "MongoDB.Driver": {
               "target": "Package",
               "version": "[3.5.2, )"
@@ -62,6 +72,10 @@
             {
               "name": "Microsoft.AspNetCore.App.Ref",
               "version": "[8.0.22, 8.0.22]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Host.linux-x64",
+              "version": "[8.0.22, 8.0.22]"
             }
           ],
           "frameworkReferences": {
@@ -72,7 +86,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "/usr/share/dotnet/sdk/8.0.122/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "/usr/share/dotnet/sdk/10.0.100/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

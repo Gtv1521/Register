@@ -3,6 +3,7 @@ using FrameworkDriver_Api.src.Interfaces;
 using FrameworkDriver_Api.src.Models;
 using FrameworkDriver_Api.src.Repositories;
 using FrameworkDriver_Api.src.Services;
+using FrameworkDriver_Api.src.Utils;
 using FrameworkDriver_Api.Utils;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -14,8 +15,8 @@ builder.Services.Configure<DataContext>(builder.Configuration.GetSection("Connec
 // iniciacion de servicios externos
 builder.Services.AddScoped<Context>();
 
-// // add services for Services
-// // builder.Services.AddScoped<ClientService>();
+// add services for Services
+builder.Services.AddScoped<ClientService>();
 builder.Services.AddScoped<UserService>();
 // // builder.Services.AddScoped<RegisterService>();
 // // builder.Services.AddScoped<ObservationService>();
@@ -32,7 +33,8 @@ builder.Services.AddScoped<ICrud<UserModel>, UserRepository>();
 builder.Services.AddScoped<ICrud<RegisterModel>, RegisterRepository>();
 builder.Services.AddScoped<ICrud<ObservationModel>, ObservationRepository>();
 
-
+//add utils
+builder.Services.AddScoped<FileUpload>();
 
 // add services for controllers
 builder.Services.AddControllers();

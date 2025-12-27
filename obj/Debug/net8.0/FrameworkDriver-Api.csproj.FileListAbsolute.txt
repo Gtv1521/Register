@@ -37,3 +37,47 @@
 /home/gustavo/Desarrollo/C#/FrameworkDriver-Api/obj/Debug/net8.0/FrameworkDriver-Api.pdb
 /home/gustavo/Desarrollo/C#/FrameworkDriver-Api/obj/Debug/net8.0/FrameworkDriver-Api.genruntimeconfig.cache
 /home/gustavo/Desarrollo/C#/FrameworkDriver-Api/obj/Debug/net8.0/ref/FrameworkDriver-Api.dll
+/home/dvn/Documents/Development/C# .Net/Proyectos personales/Register/bin/Debug/net8.0/appsettings.Development.json
+/home/dvn/Documents/Development/C# .Net/Proyectos personales/Register/bin/Debug/net8.0/appsettings.json
+/home/dvn/Documents/Development/C# .Net/Proyectos personales/Register/bin/Debug/net8.0/FrameworkDriver-Api.staticwebassets.endpoints.json
+/home/dvn/Documents/Development/C# .Net/Proyectos personales/Register/bin/Debug/net8.0/FrameworkDriver-Api
+/home/dvn/Documents/Development/C# .Net/Proyectos personales/Register/bin/Debug/net8.0/FrameworkDriver-Api.deps.json
+/home/dvn/Documents/Development/C# .Net/Proyectos personales/Register/bin/Debug/net8.0/FrameworkDriver-Api.runtimeconfig.json
+/home/dvn/Documents/Development/C# .Net/Proyectos personales/Register/bin/Debug/net8.0/FrameworkDriver-Api.dll
+/home/dvn/Documents/Development/C# .Net/Proyectos personales/Register/bin/Debug/net8.0/FrameworkDriver-Api.pdb
+/home/dvn/Documents/Development/C# .Net/Proyectos personales/Register/bin/Debug/net8.0/DnsClient.dll
+/home/dvn/Documents/Development/C# .Net/Proyectos personales/Register/bin/Debug/net8.0/Microsoft.OpenApi.dll
+/home/dvn/Documents/Development/C# .Net/Proyectos personales/Register/bin/Debug/net8.0/MongoDB.Bson.dll
+/home/dvn/Documents/Development/C# .Net/Proyectos personales/Register/bin/Debug/net8.0/MongoDB.Driver.dll
+/home/dvn/Documents/Development/C# .Net/Proyectos personales/Register/bin/Debug/net8.0/SharpCompress.dll
+/home/dvn/Documents/Development/C# .Net/Proyectos personales/Register/bin/Debug/net8.0/Snappier.dll
+/home/dvn/Documents/Development/C# .Net/Proyectos personales/Register/bin/Debug/net8.0/Swashbuckle.AspNetCore.Swagger.dll
+/home/dvn/Documents/Development/C# .Net/Proyectos personales/Register/bin/Debug/net8.0/Swashbuckle.AspNetCore.SwaggerGen.dll
+/home/dvn/Documents/Development/C# .Net/Proyectos personales/Register/bin/Debug/net8.0/Swashbuckle.AspNetCore.SwaggerUI.dll
+/home/dvn/Documents/Development/C# .Net/Proyectos personales/Register/bin/Debug/net8.0/ZstdSharp.dll
+/home/dvn/Documents/Development/C# .Net/Proyectos personales/Register/obj/Debug/net8.0/FrameworkDriver-Api.csproj.AssemblyReference.cache
+/home/dvn/Documents/Development/C# .Net/Proyectos personales/Register/obj/Debug/net8.0/rpswa.dswa.cache.json
+/home/dvn/Documents/Development/C# .Net/Proyectos personales/Register/obj/Debug/net8.0/FrameworkDriver-Api.GeneratedMSBuildEditorConfig.editorconfig
+/home/dvn/Documents/Development/C# .Net/Proyectos personales/Register/obj/Debug/net8.0/FrameworkDriver-Api.AssemblyInfoInputs.cache
+/home/dvn/Documents/Development/C# .Net/Proyectos personales/Register/obj/Debug/net8.0/FrameworkDriver-Api.AssemblyInfo.cs
+/home/dvn/Documents/Development/C# .Net/Proyectos personales/Register/obj/Debug/net8.0/FrameworkDriver-Api.csproj.CoreCompileInputs.cache
+/home/dvn/Documents/Development/C# .Net/Proyectos personales/Register/obj/Debug/net8.0/FrameworkDriver-Api.MvcApplicationPartsAssemblyInfo.cs
+/home/dvn/Documents/Development/C# .Net/Proyectos personales/Register/obj/Debug/net8.0/FrameworkDriver-Api.MvcApplicationPartsAssemblyInfo.cache
+/home/dvn/Documents/Development/C# .Net/Proyectos personales/Register/obj/Debug/net8.0/FrameworkDriver-Api.sourcelink.json
+/home/dvn/Documents/Development/C# .Net/Proyectos personales/Register/obj/Debug/net8.0/rjimswa.dswa.cache.json
+/home/dvn/Documents/Development/C# .Net/Proyectos personales/Register/obj/Debug/net8.0/rjsmrazor.dswa.cache.json
+/home/dvn/Documents/Development/C# .Net/Proyectos personales/Register/obj/Debug/net8.0/rjsmcshtml.dswa.cache.json
+/home/dvn/Documents/Development/C# .Net/Proyectos personales/Register/obj/Debug/net8.0/scopedcss/bundle/FrameworkDriver-Api.styles.css
+/home/dvn/Documents/Development/C# .Net/Proyectos personales/Register/obj/Debug/net8.0/staticwebassets.build.json
+/home/dvn/Documents/Development/C# .Net/Proyectos personales/Register/obj/Debug/net8.0/staticwebassets.build.json.cache
+/home/dvn/Documents/Development/C# .Net/Proyectos personales/Register/obj/Debug/net8.0/staticwebassets.development.json
+/home/dvn/Documents/Development/C# .Net/Proyectos personales/Register/obj/Debug/net8.0/staticwebassets.build.endpoints.json
+/home/dvn/Documents/Development/C# .Net/Proyectos personales/Register/obj/Debug/net8.0/swae.build.ex.cache
+/home/dvn/Documents/Development/C# .Net/Proyectos personales/Register/obj/Debug/net8.0/Framewor.2906DDFB.Up2Date
+/home/dvn/Documents/Development/C# .Net/Proyectos personales/Register/obj/Debug/net8.0/FrameworkDriver-Api.dll
+/home/dvn/Documents/Development/C# .Net/Proyectos personales/Register/obj/Debug/net8.0/refint/FrameworkDriver-Api.dll
+/home/dvn/Documents/Development/C# .Net/Proyectos personales/Register/obj/Debug/net8.0/FrameworkDriver-Api.pdb
+/home/dvn/Documents/Development/C# .Net/Proyectos personales/Register/obj/Debug/net8.0/FrameworkDriver-Api.genruntimeconfig.cache
+/home/dvn/Documents/Development/C# .Net/Proyectos personales/Register/obj/Debug/net8.0/ref/FrameworkDriver-Api.dll
+/home/dvn/Documents/Development/C# .Net/Proyectos personales/Register/bin/Debug/net8.0/CloudinaryDotNet.dll
+/home/dvn/Documents/Development/C# .Net/Proyectos personales/Register/bin/Debug/net8.0/Newtonsoft.Json.dll
