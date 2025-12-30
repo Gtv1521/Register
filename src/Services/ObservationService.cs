@@ -39,12 +39,11 @@ namespace FrameworkDriver_Api.src.Services
                         (string? image, string? idImage) = await _fileUpload.UploadMedia(photos, "observation");
                         if (image != null && idImage != null)
                         {
-                            var File = new PhotosModel
+                            FileData.Add(new PhotosModel
                             {
                                 Id = idImage,
                                 Photos = image,
-                            };
-                            FileData.Add(File);
+                            });
                         }
                         // si existe un error al subir un archivo se notifica.
                         else
@@ -54,7 +53,8 @@ namespace FrameworkDriver_Api.src.Services
 
                     }
                 }
-                var newObservation = new ObservationModel
+                //  retorna un id de objeto creado
+                return await _observation.CreateAsync(new ObservationModel
                 {
                     IdRegister = observation.IdRegister,
                     Type = observation.Type,
@@ -62,8 +62,7 @@ namespace FrameworkDriver_Api.src.Services
                     CreatedAt = DateTime.Now,
                     IdUser = observation.IdUser,
                     Photos = FileData,
-                };
-                return await _observation.CreateAsync(newObservation);
+                });
 
             }
             catch (System.Exception ex)
@@ -72,10 +71,11 @@ namespace FrameworkDriver_Api.src.Services
                 throw new Exception("Ha ocurrido el error " + ex.Message);
             }
         }
+        // 
         public async Task<ObservationModel> GetClientByIdAsync(string id)
         {
             return await _observation.GetByIdAsync(id);
         }
-
+        // public async Task<ObservationModel> GetAll
     }
 }

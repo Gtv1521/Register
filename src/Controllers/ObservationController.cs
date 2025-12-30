@@ -49,5 +49,21 @@ namespace FrameworkDriver_Api.src.Controllers
             if (client == null) return NotFound("Client not found");
             return Ok(client);
         }
+
+        //[HttpGet("{id}/{page}/{size}")]
+        //public async Task<IActionResult> GetAllObservation(string id, int page = 1, int size = 10)
+        //{
+        //    try
+        //    {
+        //        if (id != null)
+        //        {
+        //            return await _observationService.get ();   
+        //        }
+        //    }
+        //    catch (System.Exception ex)
+        //    {
+        //        
+        //    }
+        //}
     }
 }

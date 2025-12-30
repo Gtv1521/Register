@@ -18,9 +18,8 @@ builder.Services.AddScoped<Context>();
 // add services for Services
 builder.Services.AddScoped<ClientService>();
 builder.Services.AddScoped<UserService>();
-builder.Services.AddScoped<SessionService>();
-// // builder.Services.AddScoped<RegisterService>();
-// // builder.Services.AddScoped<ObservationService>();
+builder.Services.AddScoped<RegisterService>();
+builder.Services.AddScoped<ObservationService>();
 
 // //  add repositories
 // builder.Services.AddScoped<ClientRepository>();
@@ -38,6 +37,11 @@ builder.Services.AddScoped<ICrud<ObservationModel>, ObservationRepository>();
 builder.Services.AddScoped<ISession<SessionModel>, SessionRepository>();
 //add utils
 builder.Services.AddScoped<FileUpload>();
+
+//add cloudinary key on settings
+builder.Services.Configure<CloudinaryModel>(
+    builder.Configuration.GetSection("Cloudinary"));
+
 
 // add services for controllers
 builder.Services.AddControllers();
