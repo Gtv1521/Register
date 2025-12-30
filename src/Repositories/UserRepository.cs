@@ -2,15 +2,17 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using FrameworkDriver_Api.src.Exceptions;
 using FrameworkDriver_Api.src.Interfaces;
 using FrameworkDriver_Api.src.Models;
 using FrameworkDriver_Api.Utils;
 using Microsoft.VisualBasic;
 using MongoDB.Driver;
+using ZstdSharp.Unsafe;
 
 namespace FrameworkDriver_Api.src.Repositories
 {
-    public class UserRepository : ICrud<UserModel>
+    public class UserRepository : ICrudWithLoad<UserModel>
     {
         private readonly IMongoCollection<UserModel> _users;
         public UserRepository(Context context)
@@ -20,14 +22,14 @@ namespace FrameworkDriver_Api.src.Repositories
 
         public async Task<string> CreateAsync(UserModel item)
         {
-            if (!GetMailAsync(item.email).Result)
+            if (!GetMailAsync(item.email).Result.Item1)
             {
-                if (!UniquePinAsync(item.pin).Result) return await _users.InsertOneAsync(item).ContinueWith(task => item.Id);
-                else throw new Exception("El pin ya existe debe ser unico");
+                if (UniquePinAsync((item.pin)).Result.Item1) return await _users.InsertOneAsync(item).ContinueWith(task => item.Id);
+                else throw new PinException("El pin ya existe debe ser unico");
             }
             else
             {
-                throw new Exception("El mail ya existe");
+                throw new EmailException("El mail ya existe");
             }
         }
 
@@ -51,6 +53,23 @@ namespace FrameworkDriver_Api.src.Repositories
             return await _users.Find(user => user.Id == id).FirstOrDefaultAsync();
         }
 
+        public async Task<UserModel> LoadByEmailAsync(string email)
+        {
+            return await GetMailAsync(email).ContinueWith(task =>
+            {
+                if (task.Result.Item2 == null) throw new KeyNotFoundException("no se encontro el usuario");
+                return task.Result.Item2;
+            });
+        }
+
+        public async Task<UserModel?> LoadByPinAsync(int pin)
+        {
+            return await UniquePinAsync(pin).ContinueWith(task =>
+            {;
+                return task.Result.objecto;
+            });
+        }
+
         public async Task<bool> UpdateAsync(string id, UserModel item)
         {
 
@@ -64,15 +83,16 @@ namespace FrameworkDriver_Api.src.Repositories
         }
 
         //  valida que el mail no exista
-        private async Task<bool> GetMailAsync(string mail)
+        private async Task<(bool, UserModel?)> GetMailAsync(string mail)
         {
-            var response = await _users.FindAsync(user => user.email == mail);
-            return response.Any();
+            var response = await _users.Find(user => user.email == mail).FirstOrDefaultAsync();
+            return (response != null, response); // si es null no existe el mail
         }
 
-        private async Task<bool> UniquePinAsync(int pin)
+        private async Task<(bool status, UserModel? objecto)> UniquePinAsync(int pin)
         {
-            return await _users.FindAsync(user => user.pin == pin).ContinueWith(task => task.Result.Any());
+            var user = await _users.Find(u => u.pin == pin).FirstOrDefaultAsync();
+            return (user == null, user); // si es null el pin no existe
         }
     }
 }

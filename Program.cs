@@ -18,6 +18,7 @@ builder.Services.AddScoped<Context>();
 // add services for Services
 builder.Services.AddScoped<ClientService>();
 builder.Services.AddScoped<UserService>();
+builder.Services.AddScoped<SessionService>();
 // // builder.Services.AddScoped<RegisterService>();
 // // builder.Services.AddScoped<ObservationService>();
 
@@ -28,11 +29,13 @@ builder.Services.AddScoped<UserService>();
 // builder.Services.AddScoped<ObservationRepository>();
 
 //  add services for repositories
+builder.Services.AddScoped<IToken<UserModel>, Token>();
+
 builder.Services.AddScoped<ICrud<ClientModel>, ClientRepository>();
-builder.Services.AddScoped<ICrud<UserModel>, UserRepository>();
+builder.Services.AddScoped<ICrudWithLoad<UserModel>, UserRepository>();
 builder.Services.AddScoped<ICrud<RegisterModel>, RegisterRepository>();
 builder.Services.AddScoped<ICrud<ObservationModel>, ObservationRepository>();
-
+builder.Services.AddScoped<ISession<SessionModel>, SessionRepository>();
 //add utils
 builder.Services.AddScoped<FileUpload>();
 

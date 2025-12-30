@@ -5,13 +5,14 @@ using System.Threading.Tasks;
 using FrameworkDriver_Api.src.Models;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
+using MongoDB.Bson.Serialization.IdGenerators;
 
 namespace FrameworkDriver_Api.Models
 {
     // observaciones del tecnico / analisis a los equipos del cliente
     public class ObservationModel
     {
-        [BsonId]
+        [BsonId(IdGenerator = typeof(StringObjectIdGenerator))]
         [BsonRepresentation(BsonType.ObjectId)]
         public string Id { get; set; } = null!;
         [BsonRepresentation(BsonType.ObjectId)]

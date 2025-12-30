@@ -32,12 +32,7 @@ namespace FrameworkDriver_Api.src.Controllers
                 {
                     return BadRequest(ModelState.Values.SelectMany(v => v.Errors));
                 }
-                var userId = await _userService.CreateUserAsync(new UserModel
-                {
-                    name = user.Name,
-                    email = user.Email,
-                    pin = user.Pin
-                });
+                var userId = await _userService.CreateUserAsync(user);
                 _logger.LogInformation("User created with ID: {UserId}", userId);
                 return CreatedAtAction(nameof(GetUserById), new { id = userId }, userId);
 
@@ -69,12 +64,7 @@ namespace FrameworkDriver_Api.src.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateUser(string id, [FromBody] UserDto user)
         {
-            var updated = await _userService.UpdateUserAsync(id, new UserModel
-            {
-                name = user.Name,
-                email = user.Email,
-                pin = user.Pin
-            });
+            var updated = await _userService.UpdateUserAsync(id, user);
             if (!updated) return NotFound("user not found");
             return NoContent();
         }

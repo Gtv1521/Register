@@ -81,3 +81,5 @@
 /home/dvn/Documents/Development/C# .Net/Proyectos personales/Register/obj/Debug/net8.0/ref/FrameworkDriver-Api.dll
 /home/dvn/Documents/Development/C# .Net/Proyectos personales/Register/bin/Debug/net8.0/CloudinaryDotNet.dll
 /home/dvn/Documents/Development/C# .Net/Proyectos personales/Register/bin/Debug/net8.0/Newtonsoft.Json.dll
+/home/gustavo/Desarrollo/C#/FrameworkDriver-Api/bin/Debug/net8.0/CloudinaryDotNet.dll
+/home/gustavo/Desarrollo/C#/FrameworkDriver-Api/bin/Debug/net8.0/Newtonsoft.Json.dll
