@@ -8,6 +8,6 @@ namespace FrameworkDriver_Api.src.Models
     public class PhotosModel
     {
         public string Id { get; set; } = null!;
-        public string Photos { get; set; } = null!;
+        public string Photo { get; set; } = null!;
     }
 }

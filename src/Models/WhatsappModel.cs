@@ -9,6 +9,6 @@ namespace FrameworkDriver_Api.src.Models
     {
         public string Url { get; set; } = null!;
         public string AccessToken { get; set; } = null!;
-        public string From { get; set; } = null!;
+
     }
 }

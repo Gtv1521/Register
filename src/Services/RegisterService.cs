@@ -24,14 +24,14 @@ namespace FrameworkDriver_Api.src.Services
         {
             try
             {
-                var newRegister = new RegisterModel
+
+
+                return await _registerRepo.CreateAsync(new RegisterModel
                 {
                     IdClient = register.IdClient,
                     StatusRegister = register.StatusRegister,
                     CreatedAt = DateTime.Now,
-                };
-
-                return await _registerRepo.CreateAsync(newRegister);
+                });
 
             }
             catch (System.Exception ex)
