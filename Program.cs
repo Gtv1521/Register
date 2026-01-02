@@ -23,6 +23,14 @@ builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<RegisterService>();
 builder.Services.AddScoped<ObservationService>();
 builder.Services.AddScoped<SessionService>();
+builder.Services.AddScoped<RegisterService>();
+builder.Services.AddScoped<ObservationService>();
+
+// //  add repositories
+// builder.Services.AddScoped<ClientRepository>();
+// builder.Services.AddScoped<UserRepository>();
+// builder.Services.AddScoped<RegisterRepository>();
+// builder.Services.AddScoped<ObservationRepository>();
 
 //  add services for repositories
 builder.Services.AddScoped<IToken<UserModel>, Token>();

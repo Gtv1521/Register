@@ -54,7 +54,11 @@ namespace FrameworkDriver_Api.src.Services
                             FileData.Add(new PhotosModel
                             {
                                 Id = idImage,
+<<<<<<< HEAD
                                 Photo = image,
+=======
+                                Photos = image,
+>>>>>>> ef7d612 (update: funtions add branch Duvan)
                             });
                         }
                         // si existe un error al subir un archivo se notifica.
@@ -65,6 +69,7 @@ namespace FrameworkDriver_Api.src.Services
 
                     }
                 }
+<<<<<<< HEAD
                 var register = await _register.GetByIdAsync(observation.IdRegister);
                 var client = await _client.GetByIdAsync(register.IdClient);
                 var responseWh = await _wh.SendMenssageAsync(observation.Description, client.Phone, FileData);
@@ -88,6 +93,18 @@ namespace FrameworkDriver_Api.src.Services
                 }
 
 
+=======
+                //  retorna un id de objeto creado
+                return await _observation.CreateAsync(new ObservationModel
+                {
+                    IdRegister = observation.IdRegister,
+                    Type = observation.Type,
+                    Description = observation.Description,
+                    CreatedAt = DateTime.Now,
+                    IdUser = observation.IdUser,
+                    Photos = FileData,
+                });
+>>>>>>> ef7d612 (update: funtions add branch Duvan)
 
             }
             catch (System.Exception ex)

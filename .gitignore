@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 ## .NET
 bin/
 obj/
@@ -11,4 +12,15 @@ obj/
 *.suo
 
 ## Logs
+=======
+# .NET build artifacts
+bin/
+obj/
+
+# IDEs
+.vs/
+.idea/
+
+# Logs
+>>>>>>> ef7d612 (update: funtions add branch Duvan)
 *.log
