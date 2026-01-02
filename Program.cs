@@ -25,6 +25,7 @@ builder.Services.AddScoped<ObservationService>();
 builder.Services.AddScoped<SessionService>();
 builder.Services.AddScoped<RegisterService>();
 builder.Services.AddScoped<ObservationService>();
+builder.Services.AddScoped<SessionService>();
 
 //  add services for repositories
 builder.Services.AddScoped<IToken<UserModel>, Token>();

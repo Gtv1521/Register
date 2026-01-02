@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using FrameworkDriver_Api.Models;
 using FrameworkDriver_Api.src.Dto;
+
 using FrameworkDriver_Api.src.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -51,11 +52,5 @@ namespace FrameworkDriver_Api.src.Controllers
             return Ok(result);
         }
 
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteRegister(string id)
-        {
-            var result = await _registerService.DeleteRegisterAsync(id);
-            return Ok(result);
-        }
     }
 }
