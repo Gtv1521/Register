@@ -13,12 +13,9 @@ namespace FrameworkDriver_Api.src.Repositories
 {
     public class SessionRepository : ISession<SessionModel>
     {
-
-        private readonly ICrudWithLoad<UserModel> _userRepository;
         private readonly IMongoCollection<SessionModel> _sessionCollection;
-        public SessionRepository(ICrudWithLoad<UserModel> userRepository, Context context)
+        public SessionRepository(Context context)
         {
-            _userRepository = userRepository;
             _sessionCollection = context.GetCollection<SessionModel>("Sessions");
         }
         //  verifica si la sesion esta activa
@@ -59,7 +56,8 @@ namespace FrameworkDriver_Api.src.Repositories
                 {
                     UserId = user.Id.ToString(),
                     StartTime = DateTime.UtcNow,
-                    Status = "Active"
+                    Status = "Active",
+                    Token = user.Token
                 };
             });
         }

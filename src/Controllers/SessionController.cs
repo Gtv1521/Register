@@ -29,7 +29,7 @@ namespace FrameworkDriver_Api.src.Controllers
             {
                 var (data, token) = await _sessionService.LogIn(password);
                 _logger.LogInformation("User logged in successfully: {UserId}", data.UserId);
-                return Ok(new { id = data.UserId });
+                return Ok(new { id = data.UserId, token });
             }
             catch (UnauthorizedAccessException uaEx)
             {
@@ -88,7 +88,7 @@ namespace FrameworkDriver_Api.src.Controllers
                     email = user.Email,
                     pin = user.Pin
                 });
-                return Ok(new { id = data.Id });
+                return Ok(new { id = data.UserId, token });
             }
             catch (PinException pEx)
             {

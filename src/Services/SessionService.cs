@@ -76,27 +76,26 @@ namespace FrameworkDriver_Api.src.Services
         public async Task<(SessionModel data, string Token)> SignIn(UserModel user)
         {
             var response = await _userRepository.CreateAsync(user);
+
+            // se crea tokens
+            var tokenRefresh = await _tokenService.GenerateRefreshToken(response);
+            var AccesToken = await _tokenService.GenerateToken(user, 1); // Token valido por 1 hora
+            
+            //  se crea la sesion en db
             return await _sessionRepository.SignIn(new SessionModel
             {
-                UserId = user.Id.ToString(),
+                UserId = response,
                 StartTime = DateTime.UtcNow,
-                Status = "Active"
+                Status = "Active",
+                Token = tokenRefresh
             }).ContinueWith(task =>
             {
                 if (task.Result == null)
                 {
                     throw new UserException("User could not be created");
                 }
-                var tokenRefresh = _tokenService.GenerateRefreshToken(task.Result.UserId);
-                var AccesToken = _tokenService.GenerateToken(user, 1); // Token valido por 1 hora
-                return (new SessionModel
-                {
-                    UserId = task.Result.UserId,
-                    StartTime = task.Result.StartTime,
-                    Status = task.Result.Status,
-                    Id = task.Result.UserId,
-                    Token = tokenRefresh.Result
-                }, AccesToken.ToString());
+
+                return (task.Result, AccesToken);
             });
         }
 
