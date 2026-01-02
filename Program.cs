@@ -22,10 +22,12 @@ builder.Services.AddScoped<ClientService>();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<RegisterService>();
 builder.Services.AddScoped<ObservationService>();
+builder.Services.AddScoped<SessionService>();
 
 //  add services for repositories
 builder.Services.AddScoped<IToken<UserModel>, Token>();
 
+// add repositories
 builder.Services.AddScoped<ICrud<ClientModel>, ClientRepository>();
 builder.Services.AddScoped<ICrudWithLoad<UserModel>, UserRepository>();
 builder.Services.AddScoped<ICrud<RegisterModel>, RegisterRepository>();
