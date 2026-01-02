@@ -55,10 +55,14 @@ namespace FrameworkDriver_Api.src.Services
                             {
                                 Id = idImage,
 <<<<<<< HEAD
+<<<<<<< HEAD
                                 Photo = image,
 =======
                                 Photos = image,
 >>>>>>> ef7d612 (update: funtions add branch Duvan)
+=======
+                                Photo = image,
+>>>>>>> af9ae03 (feat: implement whatsapp utility)
                             });
                         }
                         // si existe un error al subir un archivo se notifica.
@@ -70,10 +74,14 @@ namespace FrameworkDriver_Api.src.Services
                     }
                 }
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> af9ae03 (feat: implement whatsapp utility)
                 var register = await _register.GetByIdAsync(observation.IdRegister);
                 var client = await _client.GetByIdAsync(register.IdClient);
                 var responseWh = await _wh.SendMenssageAsync(observation.Description, client.Phone, FileData);
 
+<<<<<<< HEAD
                 //  retorna un id de objeto creado
                 if (responseWh)
                 {
@@ -94,9 +102,12 @@ namespace FrameworkDriver_Api.src.Services
 
 
 =======
+=======
+>>>>>>> af9ae03 (feat: implement whatsapp utility)
                 //  retorna un id de objeto creado
-                return await _observation.CreateAsync(new ObservationModel
+                if (responseWh)
                 {
+<<<<<<< HEAD
                     IdRegister = observation.IdRegister,
                     Type = observation.Type,
                     Description = observation.Description,
@@ -105,6 +116,24 @@ namespace FrameworkDriver_Api.src.Services
                     Photos = FileData,
                 });
 >>>>>>> ef7d612 (update: funtions add branch Duvan)
+=======
+                    return await _observation.CreateAsync(new ObservationModel
+                    {
+                        IdRegister = observation.IdRegister,
+                        Type = observation.Type,
+                        Description = observation.Description,
+                        CreatedAt = DateTime.Now,
+                        IdUser = observation.IdUser,
+                        Photos = FileData,
+                    });
+                }
+                else
+                {
+                    throw new Exception("Ha ocurrido el error al crear la observacion");
+                }
+
+
+>>>>>>> af9ae03 (feat: implement whatsapp utility)
 
             }
             catch (System.Exception ex)
