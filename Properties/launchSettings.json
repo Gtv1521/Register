@@ -5,9 +5,14 @@
     "http": {
       "commandName": "Project",
       "dotnetRunMessages": true,
+<<<<<<< HEAD
       "launchBrowser": true,
       "launchUrl": "scalar",
       "applicationUrl": "http://localhost:5000",
+=======
+      "launchBrowser": false,
+      "applicationUrl": "",
+>>>>>>> 9cf86fc (update: funtions of send mail)
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
@@ -15,9 +20,14 @@
     "https": {
       "commandName": "Project",
       "dotnetRunMessages": true,
+<<<<<<< HEAD
       "launchBrowser": true,
       "launchUrl": "",
       "applicationUrl": "https://localhost:7225;http://localhost:5272",
+=======
+      "launchBrowser": false,
+      "applicationUrl": "",
+>>>>>>> 9cf86fc (update: funtions of send mail)
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
