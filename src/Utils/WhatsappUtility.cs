@@ -1,11 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Text.Json;
-using System.Threading.Tasks;
-using CloudinaryDotNet;
-using FrameworkDriver_Api.src.Dto;
 using FrameworkDriver_Api.src.Models;
 using FrameworkDriver_Api.src.Utils.Interfaces;
 using Microsoft.Extensions.Options;
