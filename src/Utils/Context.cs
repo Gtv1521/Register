@@ -10,7 +10,7 @@ namespace FrameworkDriver_Api.Utils
 {
     public class Context
     {
-        private readonly IMongoDatabase _database;
+        private readonly IMongoDatabase? _database;
         public Context(IOptions<DataContext> settings)
         {
             try
@@ -34,7 +34,22 @@ namespace FrameworkDriver_Api.Utils
 
         public IMongoCollection<T> GetCollection<T>(string name)
         {
-            return _database.GetCollection<T>(name);
+            try
+            {
+                if (_database == null)
+                {
+                    throw new InvalidOperationException("Database connection is not initialized.");
+                }
+                return _database.GetCollection<T>(name);
+            }
+            catch (MongoException ex)
+            {
+                throw new Exception($"Could not get the collection: {name}.", ex);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("An error occurred while retrieving the collection.", ex);
+            }
         }
     }
 }
