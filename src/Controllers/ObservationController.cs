@@ -1,14 +1,17 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Threading.Tasks;
 using FrameworkDriver_Api.src.Dto;
 using FrameworkDriver_Api.src.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FrameworkDriver_Api.src.Controllers
 {
     [ApiController]
+    [Authorize]
     [Route("api/[controller]")]
     public class ObservationController : ControllerBase
     {
@@ -20,13 +23,15 @@ namespace FrameworkDriver_Api.src.Controllers
             _logger = logger;
             _observationService = observationService;
         }
+
         [HttpPost]
-        public async Task<IActionResult> CreateObservation(ObservationDTO observation)
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> CreateObservation([FromForm] ObservationDTO observation)
         {
             try
             {
                 if (!ModelState.IsValid)
-                {
+                {   
                     return BadRequest(ModelState.Values.SelectMany(v => v.Errors));
                 }
                 if (observation != null)

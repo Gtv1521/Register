@@ -8,6 +8,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.IdentityModel.JsonWebTokens;
 using FrameworkDriver_Api.src.Models;
 using FrameworkDriver_Api.src.Interfaces;
+using FrameworkDriver_Api.src.Exceptions;
 
 namespace FrameworkDriver_Api.src.Utils
 {
@@ -49,6 +50,7 @@ namespace FrameworkDriver_Api.src.Utils
 
         public async Task<string> GenerateRefreshToken(string Id)
         {
+            if(Id == null) throw new FailedException("Fallo crear token refresh");
             return await Task.FromResult(Convert.ToBase64String(Guid.NewGuid().ToByteArray()));
         }
     }

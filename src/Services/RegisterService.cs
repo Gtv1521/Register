@@ -19,7 +19,7 @@ namespace FrameworkDriver_Api.src.Services
             _registerRepository = registerRepository;
         }
 
-        public async Task<string> AddRegisterAsync(RegisterDTO register)
+        public async Task<string> AddRegisterAsync(RegisterDto register)
         {
             return await  _registerRepository.CreateAsync(new RegisterModel
             {

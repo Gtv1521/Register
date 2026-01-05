@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
 using MongoDB.Bson;
@@ -22,9 +23,13 @@ namespace FrameworkDriver_Api.Models
 
     public enum Status
     {
+        [Display(Name = "Pendiente")]
         Pending,
+        [Display(Name = "En Progreso")]
         InProgress,
+        [Display(Name = "Completado")]
         Completed,
+        [Display(Name = "Cancelado")]
         Cancelled
     }
 }

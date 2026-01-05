@@ -5,11 +5,13 @@ using System.Threading.Tasks;
 using FrameworkDriver_Api.Models;
 using FrameworkDriver_Api.src.Dto;
 using FrameworkDriver_Api.src.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FrameworkDriver_Api.src.Controllers
 {
     [ApiController]
+    [Authorize]
     [Route("api/[controller]")]
     public class ClientController : ControllerBase
     {

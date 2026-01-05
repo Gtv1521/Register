@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
 using FrameworkDriver_Api.src.Models;
@@ -29,9 +30,13 @@ namespace FrameworkDriver_Api.Models
     // tipo de observacion
     public enum ObservationType
     {
+        [Display(Name = "Info")]
         Info,
+        [Display(Name = "Warning")]
         Warning,
+        [Display(Name = "Error")]
         Error,
+        [Display(Name = "Solucion")]
         Solution
     }
 }

@@ -7,6 +7,7 @@ using FrameworkDriver_Api.src.Exceptions;
 using FrameworkDriver_Api.src.Models;
 using FrameworkDriver_Api.src.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
 
 namespace FrameworkDriver_Api.src.Controllers
 {
@@ -109,6 +110,26 @@ namespace FrameworkDriver_Api.src.Controllers
             {
                 _logger.LogError(ex.Message, "Error during sign-in");
                 return StatusCode(500, "Internal server error");
+            }
+        }
+
+        [HttpPut]
+        public async Task<IActionResult> UpdateTokenRefresh(string token, string id)
+        {
+            try
+            {
+                var response = await _sessionService.updateToken(token, id);
+                _logger.LogInformation($" tokens = {response}");
+                return Ok(new { response.token, response.tokenRefresh });
+            }
+            catch (FailedException)
+            {
+                return BadRequest(new { message = "Fallo en la actualización del token" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error inesperado en UpdateTokenRefresh");
+                return StatusCode(500, new { message = "Error interno del servidor" });
             }
         }
     }

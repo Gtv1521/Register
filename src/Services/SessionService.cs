@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices.Marshalling;
 using System.Threading.Tasks;
 using FrameworkDriver_Api.src.Exceptions;
 using FrameworkDriver_Api.src.Interfaces;
 using FrameworkDriver_Api.src.Models;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.IdentityModel.Tokens;
 
 namespace FrameworkDriver_Api.src.Services
 {
@@ -14,11 +16,18 @@ namespace FrameworkDriver_Api.src.Services
         private readonly IToken<UserModel> _tokenService;
         private readonly ICrudWithLoad<UserModel> _userRepository;
         private readonly ISession<SessionModel> _sessionRepository;
-        public SessionService(IToken<UserModel> tokenService, ICrudWithLoad<UserModel> userRepository, ISession<SessionModel> sessionRepository)
+        private readonly EmailService _email;
+        public SessionService(
+            IToken<UserModel> tokenService,
+            ICrudWithLoad<UserModel> userRepository,
+            ISession<SessionModel> sessionRepository,
+            EmailService email
+            )
         {
             _tokenService = tokenService;
             _userRepository = userRepository;
             _sessionRepository = sessionRepository;
+            _email = email;
         }
 
         // Inicia sesion
@@ -80,7 +89,12 @@ namespace FrameworkDriver_Api.src.Services
             // se crea tokens
             var tokenRefresh = await _tokenService.GenerateRefreshToken(response);
             var AccesToken = await _tokenService.GenerateToken(user, 1); // Token valido por 1 hora
-            
+
+            await _email.EnviarEmailAsync(
+                    user.email,
+                    "Bienvenido a nuestro servicio",
+                    $"<h1>Hola {user.name}</h1><br><article>Este es el medio de comunicacion con el cliente donde se le notifica novedades de lo que pasa con el servio que se le brinda.</article>"
+            );
             //  se crea la sesion en db
             return await _sessionRepository.SignIn(new SessionModel
             {
@@ -115,6 +129,16 @@ namespace FrameworkDriver_Api.src.Services
             {
                 return task.Result != null;
             });
+        }
+
+        public async Task<(string tokenRefresh, string token)> updateToken(string tokenAntiguo, string idUser)
+        {
+            var user = await _userRepository.GetByIdAsync(idUser);
+            var tokenNew = await _tokenService.GenerateRefreshToken(idUser);
+            var tokenSistem = await _tokenService.GenerateToken(user, 1);
+            var response = await _sessionRepository.UpdateTokenRefresh(tokenAntiguo, tokenNew, idUser);
+            if (response != false) return (tokenNew, tokenSistem);
+            throw new FailedException("Fallo actualizacion de token");
         }
     }
 }

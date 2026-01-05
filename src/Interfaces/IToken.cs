@@ -8,6 +8,6 @@ namespace FrameworkDriver_Api.src.Interfaces
     public interface IToken<T>
     {
         Task<string> GenerateToken(T user, int timeInHours);
-        Task<string> GenerateRefreshToken(string Id);
+        Task<string> GenerateRefreshToken(string id);
     }
 }

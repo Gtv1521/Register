@@ -6,11 +6,13 @@ using FrameworkDriver_Api.Models;
 using FrameworkDriver_Api.src.Dto;
 
 using FrameworkDriver_Api.src.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FrameworkDriver_Api.src.Controllers
 {
     [ApiController]
+    [Authorize]
     [Route("api/[controller]")]
 
     public class RegisterController : ControllerBase
@@ -25,7 +27,7 @@ namespace FrameworkDriver_Api.src.Controllers
             _logger = logger;
         }
         [HttpPost]
-        public async Task<IActionResult> AddRegister([FromBody] RegisterDTO register)
+        public async Task<IActionResult> AddRegister([FromBody] RegisterDto register)
         {
             var result = await _registerService.AddRegisterAsync(register);
             return Ok(result);
