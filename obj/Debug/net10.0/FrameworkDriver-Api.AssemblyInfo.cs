@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("FrameworkDriver-Api")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+9b3d5ac258a2084a64fab3c29a031fdcf4857adf")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+62c4a7d4579f2c830101c613e1bb101e599f5704")]
 [assembly: System.Reflection.AssemblyProductAttribute("FrameworkDriver-Api")]
 [assembly: System.Reflection.AssemblyTitleAttribute("FrameworkDriver-Api")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
