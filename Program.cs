@@ -121,6 +121,7 @@ builder.Services.AddScoped<ICrudWithLoad<UserModel>, UserRepository>();
 builder.Services.AddScoped<ICrud<RegisterModel>, RegisterRepository>();
 builder.Services.AddScoped<ICrud<ObservationModel>, ObservationRepository>();
 builder.Services.AddScoped<ISession<SessionModel>, SessionRepository>();
+builder.Services.AddScoped<QrInterface, QrService>();
 //add utils
 builder.Services.AddScoped<FileUpload>();
 

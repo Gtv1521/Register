@@ -1,12 +1,6 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using FrameworkDriver_Api.Models;
 using FrameworkDriver_Api.src.Dto;
 using FrameworkDriver_Api.src.Interfaces;
-
-using FrameworkDriver_Api.src.Repositories;
 
 
 namespace FrameworkDriver_Api.src.Services
@@ -21,7 +15,7 @@ namespace FrameworkDriver_Api.src.Services
 
         public async Task<string> AddRegisterAsync(RegisterDto register)
         {
-            return await  _registerRepository.CreateAsync(new RegisterModel
+            return await _registerRepository.CreateAsync(new RegisterModel
             {
                 IdClient = register.IdClient,
                 StatusRegister = register.StatusRegister,

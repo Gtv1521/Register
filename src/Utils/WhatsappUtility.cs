@@ -19,6 +19,15 @@ namespace FrameworkDriver_Api.src.Utils
         private readonly string _accessToken;
         private ILogger<WhatsappUtility> _logger;
 
+        private bool IsVideo(string url)
+        {
+            return url.EndsWith(".mp4") ||
+                   url.EndsWith(".mov") ||
+                   url.EndsWith(".avi") ||
+                   url.EndsWith(".webm");
+        }
+
+
 
         public WhatsappUtility(IOptions<WhatsappModel> options, ILogger<WhatsappUtility> logger)
         {
@@ -45,15 +54,20 @@ namespace FrameworkDriver_Api.src.Utils
                 request.AddParameter("to", $"+57{Destiny}");
                 request.AddParameter("body", Message);
                 await client.ExecuteAsync(request);
-                foreach (var url in image)
+                if (image != null)
                 {
-                    var requestImage = new RestRequest($"{_url}/image", Method.Post);
-                    requestImage.AddHeader("content-type", "application/x-www-form-urlencoded");
-                    requestImage.AddParameter("token", _accessToken);
-                    requestImage.AddParameter("to", $"+57{Destiny}");
-                    requestImage.AddParameter("image", url.Photo);
-                    await client.ExecuteAsync(requestImage);
-                    await Task.Delay(800);
+                    foreach (var url in image)
+                    {
+                        string endpoint = IsVideo(url.Photo) ? "video" : "image";
+
+                        var requestImage = new RestRequest($"{_url}/{endpoint}", Method.Post);
+                        requestImage.AddHeader("content-type", "application/x-www-form-urlencoded");
+                        requestImage.AddParameter("token", _accessToken);
+                        requestImage.AddParameter("to", $"+57{Destiny}");
+                        requestImage.AddParameter(endpoint, url.Photo);
+                        await client.ExecuteAsync(requestImage);
+                        await Task.Delay(800);
+                    }
                 }
                 _logger.LogInformation("mensaje enviado correctamente");
                 return true;

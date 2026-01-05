@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using CloudinaryDotNet.Actions;
 using FrameworkDriver_Api.Models;
 using FrameworkDriver_Api.src.Dto;
 using FrameworkDriver_Api.src.Interfaces;
@@ -43,26 +38,29 @@ namespace FrameworkDriver_Api.src.Services
             {
                 var FileData = new List<PhotosModel>();
                 // subida del archivo de imagen o video.
-                for (int i = 0; i < observation.Photos.Count; i++)
+                if (observation.Photos != null)
                 {
-                    var photos = observation.Photos[i];
-                    if (photos != null)
+                    for (int i = 0; i < observation.Photos.Count; i++)
                     {
-                        (string? image, string? idImage) = await _fileUpload.UploadMedia(photos, "observation");
-                        if (image != null && idImage != null)
+                        var photos = observation.Photos[i];
+                        if (photos != null)
                         {
-                            FileData.Add(new PhotosModel
+                            (string? image, string? idImage) = await _fileUpload.UploadMedia(photos, "observation");
+                            if (image != null && idImage != null)
                             {
-                                Id = idImage,
-                                Photo = image,
-                            });
-                        }
-                        // si existe un error al subir un archivo se notifica.
-                        else
-                        {
-                            _logger.LogInformation("Error al subir el archivo " + photos);
-                        }
+                                FileData.Add(new PhotosModel
+                                {
+                                    Id = idImage,
+                                    Photo = image,
+                                });
+                            }
+                            // si existe un error al subir un archivo se notifica.
+                            else
+                            {
+                                _logger.LogInformation("Error al subir el archivo " + photos);
+                            }
 
+                        }
                     }
                 }
                 var register = await _register.GetByIdAsync(observation.IdRegister);
