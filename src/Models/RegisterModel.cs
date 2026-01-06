@@ -17,8 +17,9 @@ namespace FrameworkDriver_Api.Models
         [BsonRepresentation(BsonType.ObjectId)]
         public string IdClient { get; set; } = null!; // referencia al cliente
         public Status StatusRegister { get; set; } // estado del registro
+        public string UrlQr { get; set; } = string.Empty;
+        public string IdQr { get; set; } = string.Empty;
         public DateTime CreatedAt { get; set; } // fecha de creacion el dia que se recive el/los equipos
-
     }
 
     public enum Status

@@ -12,6 +12,8 @@ namespace FrameworkDriver_Api.src.Dto
         public ObservationType Type { get; set; }
         public string Description { get; set; } = null!;
         public string IdUser { get; set; } = null!;// nombre del tecnico que creo la observacion
+        public bool NotificaEmail { get; set; }
+        public bool NotificaWhatsapp { get; set; }
         public List<IFormFile>? Photos { get; set; } // lista de fotos asociadas a la observacion (hallasgos)
     }
 }

@@ -15,6 +15,7 @@ namespace FrameworkDriver_Api.src.Services
         private readonly WhatsappInterface _wh;
         private readonly ICrud<RegisterModel> _register;
         private readonly ICrud<ClientModel> _client;
+        private readonly EmailService _emailService;
 
         public ObservationService(
             ICrud<ObservationModel> observation,
@@ -22,13 +23,16 @@ namespace FrameworkDriver_Api.src.Services
             ILogger<ObservationService> logger,
             WhatsappInterface whatsapp,
             ICrud<RegisterModel> register,
-            ICrud<ClientModel> client)
+            ICrud<ClientModel> client,
+            EmailService emailService
+            )
         {
             _observation = observation;
             _fileUpload = file;
             _wh = whatsapp;
             _logger = logger;
             _register = register;
+            _emailService = emailService;
             _client = client;
         }
 
@@ -63,27 +67,54 @@ namespace FrameworkDriver_Api.src.Services
                         }
                     }
                 }
+
                 var register = await _register.GetByIdAsync(observation.IdRegister);
                 var client = await _client.GetByIdAsync(register.IdClient);
-                var responseWh = await _wh.SendMenssageAsync(observation.Description, client.Phone, FileData);
+
+                //  se envia mensaje a correo
+                if (observation.NotificaEmail)
+                {
+                    var imagenesHtml = string.Join("<br>", FileData.Select(url =>
+                        $"<img src=\"{url.Photo}\" alt=\"Evidencia\" style=\"max-width: 600px; height: auto; display: block; margin: 10px 0;\" />"
+                    ));
+
+                    await _emailService.EnviarEmailAsync(
+                        client.Email,
+                        "Actualizacion",
+                        $@"
+                            <html>
+                            <body style='font-family: Arial, sans-serif;'>
+                                <h2>Actualización de tu registro</h2>
+                                <h4>Buen día</h4>
+                                <p><strong>Estado:</strong> {register.StatusRegister}</p>
+                                <p><strong>Observación:</strong></p>
+                                <p>{observation.Description.Replace("\n", "<br>")}</p>
+
+                                <h3>Evidencias:</h3>
+                                {imagenesHtml}
+
+                                <hr>
+                                <p>Gracias por usar nuestro sistema.</p>
+                            </body>
+                            </html>"
+                    );
+                }
+                //  se envia mensaje a whatsapp
+                if (observation.NotificaWhatsapp)
+                {
+                    await _wh.SendMenssageAsync(observation.Description, client.Phone, FileData);
+                }
 
                 //  retorna un id de objeto creado
-                if (responseWh)
+                return await _observation.CreateAsync(new ObservationModel
                 {
-                    return await _observation.CreateAsync(new ObservationModel
-                    {
-                        IdRegister = observation.IdRegister,
-                        Type = observation.Type,
-                        Description = observation.Description,
-                        CreatedAt = DateTime.Now,
-                        IdUser = observation.IdUser,
-                        Photos = FileData,
-                    });
-                }
-                else
-                {
-                    throw new Exception("Ha ocurrido el error al crear la observacion");
-                }
+                    IdRegister = observation.IdRegister,
+                    Type = observation.Type,
+                    Description = observation.Description,
+                    CreatedAt = DateTime.Now,
+                    IdUser = observation.IdUser,
+                    Photos = FileData,
+                });
 
             }
             catch (System.Exception ex)

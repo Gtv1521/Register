@@ -30,7 +30,24 @@ namespace FrameworkDriver_Api.src.Controllers
             {
                 var (data, token) = await _sessionService.LogIn(password);
                 _logger.LogInformation("User logged in successfully: {UserId}", data.UserId);
-                return Ok(new { id = data.UserId, token });
+
+                Response.Cookies.Append("AuthToken", token, new CookieOptions
+                {
+                    HttpOnly = true,
+                    Secure = true,
+                    SameSite = SameSiteMode.None,
+                    Expires = DateTime.UtcNow.AddHours(1)
+                });
+
+                Response.Cookies.Append("RefreshToken", data.Token, new CookieOptions
+                {
+                    HttpOnly = true,
+                    Secure = true,
+                    SameSite = SameSiteMode.None,
+                    Expires = DateTime.UtcNow.AddMonths(2)
+                });
+
+                return Ok(new { id = data.UserId, accessToken = token, refreshToken = data.Token });
             }
             catch (UnauthorizedAccessException uaEx)
             {
@@ -89,7 +106,23 @@ namespace FrameworkDriver_Api.src.Controllers
                     email = user.Email,
                     pin = user.Pin
                 });
-                return Ok(new { id = data.UserId, token });
+
+                Response.Cookies.Append("AuthToken", token, new CookieOptions
+                {
+                    HttpOnly = true,
+                    Secure = true,
+                    SameSite = SameSiteMode.None,
+                    Expires = DateTime.UtcNow.AddHours(1)
+                });
+
+                Response.Cookies.Append("RefreshToken", data.Token, new CookieOptions
+                {
+                    HttpOnly = true,
+                    Secure = true,
+                    SameSite = SameSiteMode.None,
+                    Expires = DateTime.UtcNow.AddMonths(2)
+                });
+                return Ok(new { id = data.UserId, accessToken = token, refreshToken = data.Token });
             }
             catch (PinException pEx)
             {

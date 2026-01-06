@@ -11,8 +11,8 @@ using Microsoft.AspNetCore.Mvc;
 namespace FrameworkDriver_Api.src.Controllers
 {
     [ApiController]
-    [Authorize]
     [Route("api/[controller]")]
+    // [Authorize]
     public class ClientController : ControllerBase
     {
         public readonly ClientService _clientService;

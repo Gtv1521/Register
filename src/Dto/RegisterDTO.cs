@@ -10,5 +10,6 @@ namespace FrameworkDriver_Api.src.Dto
     {
         public string IdClient { get; set; } = null!; // referencia al cliente
         public Status StatusRegister { get; set; } // estado del registro
+        public string UrlRuta { get; set; } = string.Empty;
     }
 }

@@ -1,11 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Text.Json;
-using System.Threading.Tasks;
-using CloudinaryDotNet;
-using FrameworkDriver_Api.src.Dto;
 using FrameworkDriver_Api.src.Models;
 using FrameworkDriver_Api.src.Utils.Interfaces;
 using Microsoft.Extensions.Options;
@@ -52,7 +44,12 @@ namespace FrameworkDriver_Api.src.Utils
                 var request = new RestRequest($"{_url}/chat", Method.Post);
                 request.AddParameter("token", _accessToken);
                 request.AddParameter("to", $"+57{Destiny}");
-                request.AddParameter("body", Message);
+                request.AddParameter("body", 
+                $@"
+                    *Observacion:*
+                    {Message}
+                    "
+                );
                 await client.ExecuteAsync(request);
                 if (image != null)
                 {
