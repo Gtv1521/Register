@@ -11,7 +11,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace FrameworkDriver_Api.src.Controllers
 {
     [ApiController]
-    [Authorize]
+    // [Authorize]
     [Route("api/[controller]")]
     public class ObservationController : ControllerBase
     {

@@ -12,8 +12,8 @@ using Microsoft.AspNetCore.Mvc;
 namespace FrameworkDriver_Api.src.Controllers
 {
     [ApiController]
-    [Authorize]
     [Route("api/[controller]")]
+    // [Authorize]
 
     public class RegisterController : ControllerBase
     {
@@ -34,6 +34,7 @@ namespace FrameworkDriver_Api.src.Controllers
         }
 
         [HttpGet]
+        [AllowAnonymous] // entrada a anonima
         public async Task<IActionResult> GetAllRegisters([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
         {
             var result = await _registerService.GetAllRegistersAsync(pageNumber, pageSize);
@@ -41,6 +42,7 @@ namespace FrameworkDriver_Api.src.Controllers
         }
 
         [HttpGet("{id}")]
+        [AllowAnonymous]
         public async Task<IActionResult> GetRegisterById(string id)
         {
             var result = await _registerService.GetRegisterByIdAsync(id);

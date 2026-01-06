@@ -8,18 +8,29 @@ namespace FrameworkDriver_Api.src.Services
     public class RegisterService
     {
         private readonly ICrud<RegisterModel> _registerRepository;
-        public RegisterService(ICrud<RegisterModel> registerRepository)
+        private readonly QrInterface _qrService;
+        public RegisterService(
+            ICrud<RegisterModel> registerRepository,
+            QrInterface qrService
+            )
         {
             _registerRepository = registerRepository;
+            _qrService = qrService;
         }
 
         public async Task<string> AddRegisterAsync(RegisterDTO register)
         {
+            string Url = string.Empty; string Id = string.Empty;
+
+            if (register.UrlRuta != string.Empty) (Url, Id) = await _qrService.GenerateQr(register.UrlRuta);
+
             return await _registerRepository.CreateAsync(new RegisterModel
             {
                 IdClient = register.IdClient,
                 StatusRegister = register.StatusRegister,
-                CreatedAt = DateTime.UtcNow // Guardar en UTC
+                CreatedAt = DateTime.UtcNow, // Guardar en UTC
+                IdQr = Id,
+                UrlQr = Url
             });
         }
 

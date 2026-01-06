@@ -44,7 +44,12 @@ namespace FrameworkDriver_Api.src.Utils
                 var request = new RestRequest($"{_url}/chat", Method.Post);
                 request.AddParameter("token", _accessToken);
                 request.AddParameter("to", $"+57{Destiny}");
-                request.AddParameter("body", Message);
+                request.AddParameter("body", 
+                $@"
+                    *Observacion:*
+                    {Message}
+                    "
+                );
                 await client.ExecuteAsync(request);
                 if (image != null)
                 {
