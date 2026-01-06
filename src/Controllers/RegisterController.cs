@@ -27,7 +27,7 @@ namespace FrameworkDriver_Api.src.Controllers
             _logger = logger;
         }
         [HttpPost]
-        public async Task<IActionResult> AddRegister([FromBody] RegisterDto register)
+        public async Task<IActionResult> AddRegister([FromBody] RegisterDTO register)
         {
             var result = await _registerService.AddRegisterAsync(register);
             return Ok(result);
