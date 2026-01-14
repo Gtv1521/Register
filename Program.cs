@@ -3,8 +3,10 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using FrameworkDriver_Api.Models;
+using FrameworkDriver_Api.src.Dto;
 using FrameworkDriver_Api.src.Interfaces;
 using FrameworkDriver_Api.src.Models;
+using FrameworkDriver_Api.src.Projections;
 using FrameworkDriver_Api.src.Repositories;
 using FrameworkDriver_Api.src.Services;
 using FrameworkDriver_Api.src.Utils;
@@ -12,6 +14,7 @@ using FrameworkDriver_Api.src.Utils.Interfaces;
 using FrameworkDriver_Api.Utils;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi;
 using MongoDB.Driver;
 using Scalar.AspNetCore;
 
@@ -59,26 +62,18 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
         options.Events = new JwtBearerEvents
         {
-            //      OnTokenValidated = context =>
-            // {
-            //     var blacklist = context.HttpContext.RequestServices.GetRequiredService<ITokenBlacklist>();
-            //     var jti = context.Principal.FindFirst(JwtRegisteredClaimNames.Jti)?.Value;
-
-            //     if (jti != null && blacklist.IsRevoked(jti))
-            //     {
-            //         context.Fail("Token revocado");
-            //     }
-
-            //     return Task.CompletedTask;
-            // },
+            OnTokenValidated = context =>
+            {
+                var blacklist = context.HttpContext.RequestServices.GetRequiredService<IToken<UserModel>>();
+                var jti = context.Principal?.FindFirst(JwtRegisteredClaimNames.Jti)?.Value;
+                if (jti != null && blacklist.IsRevoked(jti)) context.Fail("Token revocado");
+                return Task.CompletedTask;
+            },
 
             OnMessageReceived = context =>
             {
                 // Busca la cookie llamada "access_token"
-                if (context.Request.Cookies.ContainsKey("access_token"))
-                {
-                    context.Token = context.Request.Cookies["access_token"];
-                }
+                if (context.Request.Cookies.ContainsKey("access_token")) context.Token = context.Request.Cookies["access_token"];
                 return Task.CompletedTask;
             },
 
@@ -112,14 +107,15 @@ builder.Services.AddScoped<ObservationService>();
 builder.Services.AddScoped<SessionService>();
 builder.Services.AddScoped<EmailService>();
 
+builder.Services.AddScoped<IHashPass<UserDto>, HashPassword>();
 //  add services for repositories
 builder.Services.AddScoped<IToken<UserModel>, Token>();
 
 // add repositories
-builder.Services.AddScoped<ICrud<ClientModel>, ClientRepository>();
+builder.Services.AddScoped<IAddFilter<ClientModel, ClientModel>, ClientRepository>();
 builder.Services.AddScoped<ICrudWithLoad<UserModel>, UserRepository>();
-builder.Services.AddScoped<ICrud<RegisterModel>, RegisterRepository>();
-builder.Services.AddScoped<ICrud<ObservationModel>, ObservationRepository>();
+builder.Services.AddScoped<IAddFilter<RegisterModel, ListRegistersProjection>, RegisterRepository>();
+builder.Services.AddScoped<ILoadAllId<ObservationModel>, ObservationRepository>();
 builder.Services.AddScoped<ISession<SessionModel>, SessionRepository>();
 builder.Services.AddScoped<QrInterface, QrService>();
 //add utils
@@ -134,7 +130,26 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddOpenApi();
+builder.Services.AddOpenApi(options =>
+{
+    options.AddDocumentTransformer((document, context, cancellationToken) =>
+    {
+        document.Components ??= new OpenApiComponents();
+
+        // Usa IOpenApiSecurityScheme en lugar de OpenApiSecurityScheme
+        document.Components.SecuritySchemes ??= new Dictionary<string, IOpenApiSecurityScheme>();
+
+        document.Components.SecuritySchemes["BearerAuth"] = new OpenApiSecurityScheme
+        {
+            Type = SecuritySchemeType.Http,
+            Scheme = "bearer",
+            BearerFormat = "JWT",
+            Description = "JWT Authorization header usando Bearer scheme. Ejemplo: Bearer eyJhbGciOi..."
+        };
+
+        return Task.CompletedTask;
+    });
+});
 
 var app = builder.Build();
 
@@ -145,7 +160,7 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
     app.MapScalarApiReference(options =>
     {
-        options.WithTitle("Manager-Api")
+        options.WithTitle("Register-Api")
            .WithClassicLayout()
            .ForceDarkMode()
            .HideSearch()
@@ -153,18 +168,11 @@ if (app.Environment.IsDevelopment())
            .ExpandAllTags()
            .SortTagsAlphabetically()
            .SortOperationsByMethod()
+           .AddPreferredSecuritySchemes("BearerAuth")
            .PreserveSchemaPropertyOrder();
         //    .WithProxy("https://api-gateway.company.com")
         //    .AddServer("https://api.company.com", "Production")
         //    .AddServer("https://staging-api.company.com", "Staging");
-        // options.AddPreferredSecuritySchemes("bearerAuth");
-
-        options
-        .AddPreferredSecuritySchemes("BearerAuth")
-        .AddHttpAuthentication("BearerAuth", auth =>
-        {
-            auth.Token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...";
-        });
     });
 
     app.UseSwagger();

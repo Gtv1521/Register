@@ -3,10 +3,12 @@ using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Threading.Tasks;
+using FrameworkDriver_Api.Models;
 using FrameworkDriver_Api.src.Dto;
 using FrameworkDriver_Api.src.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using ZstdSharp.Unsafe;
 
 namespace FrameworkDriver_Api.src.Controllers
 {
@@ -31,7 +33,7 @@ namespace FrameworkDriver_Api.src.Controllers
             try
             {
                 if (!ModelState.IsValid)
-                {   
+                {
                     return BadRequest(ModelState.Values.SelectMany(v => v.Errors));
                 }
                 if (observation != null)
@@ -55,20 +57,39 @@ namespace FrameworkDriver_Api.src.Controllers
             return Ok(client);
         }
 
-        //[HttpGet("{id}/{page}/{size}")]
-        //public async Task<IActionResult> GetAllObservation(string id, int page = 1, int size = 10)
-        //{
-        //    try
-        //    {
-        //        if (id != null)
-        //        {
-        //            return await _observationService.get ();   
-        //        }
-        //    }
-        //    catch (System.Exception ex)
-        //    {
-        //        
-        //    }
-        //}
+        [HttpGet("{idRegister}/{page}/{size}")]
+        public async Task<IActionResult> GetAllObservation(string idRegister, int page = 1, int size = 30)
+        {
+            try
+            {
+                if (idRegister == null) return BadRequest("El id no debe estar vacio");
+                var response = await _observationService.GetAllById(idRegister, page, size);
+                if (response.Count() == 0) return NotFound($"No hay observaciones para el registro: {idRegister}");
+                return Ok(response);
+            }
+            catch (System.Exception ex)
+            {
+                return Problem(ex.Message);
+            }
+        }
+  
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateObservation(string id, [FromBody] ObservationDTO item)
+        {
+            if(id == null) return BadRequest("El id no puede estar vacio");
+            if(!ModelState.IsValid) return BadRequest(ModelState.Values.SelectMany(x => x.Errors));
+
+            try
+            {
+                var response = await _observationService.Update(id, item);
+                if(!response) return NotFound("No se encontro dato a actualizar");
+                return Ok(response);
+            }
+            catch (System.Exception ex)
+            {
+                return Problem(ex.Message);
+            }
+        }
+  
     }
 }

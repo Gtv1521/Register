@@ -10,8 +10,8 @@ namespace FrameworkDriver_Api.src.Services
 {
     public class ClientService
     {
-        private readonly ICrud<ClientModel> _client;
-        public ClientService(ICrud<ClientModel> client)
+        private readonly IAddFilter<ClientModel, ClientModel> _client;
+        public ClientService(IAddFilter<ClientModel, ClientModel> client)
         {
             _client = client;
         }
@@ -28,6 +28,11 @@ namespace FrameworkDriver_Api.src.Services
         public async Task<ClientModel> GetClientByIdAsync(string id)
         {
             return await _client.GetByIdAsync(id);
+        }
+
+        public async Task<IEnumerable<ClientModel>> FilterClient(string filter)
+        {
+            return await _client.FilterData(filter);
         }
         public async Task<IEnumerable<ClientModel>> GetAllClientsAsync(int pageNumber, int pageSize)
         {

@@ -39,7 +39,7 @@ namespace FrameworkDriver_Api.src.Interfaces
 
     public interface ILoadMail<T>
     {
-        Task<T> LoadByEmailAsync(string email);
+        Task<T?> LoadByEmailAsync(string email);
     }
     public interface ILoadPin<T>
     {
@@ -49,6 +49,14 @@ namespace FrameworkDriver_Api.src.Interfaces
     public interface ICrud<T> : IReadOne<T>, IReadAll<T>, ICreate<T>, IUpdate<T>, IDelete
     { }
 
-    public interface ICrudWithLoad<T> : ICrud<T>, ILoadMail<T>, ILoadPin<T>
+    public interface ICrudWithLoad<T> : ICrud<T>, ILoadMail<T>
+    { }
+
+    public interface IAddFilter<T, P> : ICrud<T>
+    {
+        Task<IEnumerable<P>> FilterData(string text);
+    }
+
+    public interface ILoadAllId<T> : ICrud<T>, IReadAllId<T>
     { }
 }

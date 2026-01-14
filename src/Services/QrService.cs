@@ -32,12 +32,15 @@ namespace FrameworkDriver_Api.src.Services
                 var stream = new MemoryStream(qrBytes);
                 stream.Position = 0;
 
+                string idUnico = $"{DateTime.UtcNow:yyyyMMddHHmmss}-{Guid.NewGuid():N}";
+                string nombreArchivo = $"{idUnico}.jpg";
+
                 IFormFile qrFile = new FormFile(
                     stream,
                     0,
                     qrBytes.Length,
                     "file",
-                    "qr.png"
+                    nombreArchivo
                 )
                 {
                     Headers = new HeaderDictionary(),

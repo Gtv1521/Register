@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
@@ -13,8 +15,21 @@ namespace FrameworkDriver_Api.src.Models
         [BsonId(IdGenerator = typeof(StringObjectIdGenerator))]
         [BsonRepresentation(BsonType.ObjectId)]
         public string Id { get; set; } = string.Empty;
-        public string name { get; set; } = null!; 
-        public string email { get; set; } = null!;
-        public int pin { get; set; } // pin de inicio de sesion
+        public string Name { get; set; } = string.Empty; 
+        public string Email { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;// pin de inicio de sesion
+        public Role Rol { get; set; }
+    }
+
+
+// tipos de rol de usuriros
+    public enum Role
+    {
+        [Display(Name = "Administrador")]
+        Administrador,
+        [Display(Name = "Usuario")]
+        Usuario,
+        [Display(Name = "Cliente")]
+        Cliente        
     }
 }

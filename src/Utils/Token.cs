@@ -9,12 +9,14 @@ using Microsoft.IdentityModel.JsonWebTokens;
 using FrameworkDriver_Api.src.Models;
 using FrameworkDriver_Api.src.Interfaces;
 using FrameworkDriver_Api.src.Exceptions;
+using System.Collections.Concurrent;
 
 namespace FrameworkDriver_Api.src.Utils
 {
     public class Token : IToken<UserModel>
     {
         private readonly IConfiguration _configuration;
+        private readonly ConcurrentDictionary<string, DateTime> _revokedTokens = new();
         public Token(IConfiguration configuration)
         {
             _configuration = configuration;
@@ -27,7 +29,7 @@ namespace FrameworkDriver_Api.src.Utils
             var claims = new[]
             {
                 new Claim(ClaimTypes.NameIdentifier, user.Id),
-                new Claim(JwtRegisteredClaimNames.Sub, user.email),
+                new Claim(JwtRegisteredClaimNames.Sub, user.Email),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                 new Claim(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64)
             };
@@ -50,8 +52,24 @@ namespace FrameworkDriver_Api.src.Utils
 
         public async Task<string> GenerateRefreshToken(string Id)
         {
-            if(Id == null) throw new FailedException("Fallo crear token refresh");
+            if (Id == null) throw new FailedException("Fallo crear token refresh");
             return await Task.FromResult(Convert.ToBase64String(Guid.NewGuid().ToByteArray()));
+        }
+
+        public bool IsRevoked(string jti)
+        {
+            var now = DateTime.UtcNow;
+            foreach (var token in _revokedTokens.Where(t => t.Value < now).ToList())
+            {
+                _revokedTokens.TryRemove(token.Key, out _);
+            }
+
+            return _revokedTokens.ContainsKey(jti);
+        }
+
+        public void Revoke(string jti, DateTime expiration)
+        {
+            _revokedTokens.TryAdd(jti, expiration);
         }
     }
 }

@@ -9,7 +9,7 @@ using MongoDB.Driver;
 
 namespace FrameworkDriver_Api.src.Repositories
 {
-    public class ObservationRepository : ICrud<ObservationModel>
+    public class ObservationRepository : ILoadAllId<ObservationModel>
     {
         private readonly IMongoCollection<ObservationModel> _observations;
         public ObservationRepository(Context context)
@@ -17,36 +17,46 @@ namespace FrameworkDriver_Api.src.Repositories
             _observations = context.GetCollection<ObservationModel>("Observations");
         }
 
-        public Task<string> CreateAsync(ObservationModel item)
+        public async Task<string> CreateAsync(ObservationModel item)
         {
-            return _observations.InsertOneAsync(item).ContinueWith(task => item.Id);
+            return await _observations.InsertOneAsync(item).ContinueWith(task => item.Id);
         }
 
-        public Task<bool> DeleteAsync(string id)
+        public async Task<bool> DeleteAsync(string id)
         {
-            return _observations.DeleteOneAsync(observation => observation.Id == id)
+            return await _observations.DeleteOneAsync(observation => observation.Id == id)
                 .ContinueWith(task => task.Result.DeletedCount > 0);
         }
 
-        public Task<IEnumerable<ObservationModel>> GetAllAsync(int pageNumber, int pageSize)
+        public async Task<IEnumerable<ObservationModel>> GetAllAsync(int pageNumber, int pageSize)
         {
-            return _observations.Find(_ => true)
+            return await _observations.Find(_ => true)
             .Skip((pageNumber - 1) * pageSize)
             .Limit(pageSize)
-            .ToListAsync()
-            .ContinueWith(task => (IEnumerable<ObservationModel>)task.Result);
+            .ToListAsync();
         }
 
-        public Task<ObservationModel> GetByIdAsync(string id)
+        // Recibe el id de registro para cargar todos las actulizaciones que tiene.
+        public async Task<IEnumerable<ObservationModel>> GetAllIdAsync(string id, int pageNumber, int pageSize)
         {
-            var result = _observations.FindAsync(observation => observation.Id == id);
-            return result.ContinueWith(task => task.Result.FirstOrDefault());
+            return await _observations
+            .Find(x => x.IdRegister == id)
+            .Skip((pageNumber - 1) * pageSize)
+            .Limit(pageSize)
+            .ToListAsync();
         }
 
-        public Task<bool> UpdateAsync(string id, ObservationModel item)
+        public async Task<ObservationModel> GetByIdAsync(string id)
         {
-            var result = _observations.ReplaceOneAsync(observation => observation.Id == id, item);
-            return result.ContinueWith(task => task.Result.ModifiedCount > 0);
+            return await _observations.FindAsync(observation => observation.Id == id).ContinueWith(task => task.Result.FirstOrDefault());
+        }
+
+        public async Task<bool> UpdateAsync(string id, ObservationModel item)
+        {
+            var filter = Builders<ObservationModel>.Filter.Eq(x => x.Id, id);
+            var update = Builders<ObservationModel>.Update.Set(x => x.Description, item.Description);
+
+            return await _observations.UpdateOneAsync(filter, update).ContinueWith(task => task.Result.ModifiedCount > 0);
         }
     }
 }

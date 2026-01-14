@@ -1,16 +1,18 @@
 using FrameworkDriver_Api.Models;
 using FrameworkDriver_Api.src.Dto;
 using FrameworkDriver_Api.src.Interfaces;
+using FrameworkDriver_Api.src.Projections;
+using MongoDB.Bson;
 
 
 namespace FrameworkDriver_Api.src.Services
 {
     public class RegisterService
     {
-        private readonly ICrud<RegisterModel> _registerRepository;
+        private readonly IAddFilter<RegisterModel, ListRegistersProjection> _registerRepository;
         private readonly QrInterface _qrService;
         public RegisterService(
-            ICrud<RegisterModel> registerRepository,
+            IAddFilter<RegisterModel, ListRegistersProjection> registerRepository,
             QrInterface qrService
             )
         {
@@ -21,6 +23,7 @@ namespace FrameworkDriver_Api.src.Services
         public async Task<string> AddRegisterAsync(RegisterDTO register)
         {
             string Url = string.Empty; string Id = string.Empty;
+
 
             if (register.UrlRuta != string.Empty) (Url, Id) = await _qrService.GenerateQr(register.UrlRuta);
 
@@ -34,6 +37,11 @@ namespace FrameworkDriver_Api.src.Services
             });
         }
 
+        // hace un filtro del cliente y sale una lista de observaciones 
+        public async Task<IEnumerable<ListRegistersProjection>> Filter(string filter)
+        {
+            return await _registerRepository.FilterData(filter);
+        }
 
         public async Task<IEnumerable<RegisterModel>> GetAllRegistersAsync(int pageNumber, int pageSize)
         {

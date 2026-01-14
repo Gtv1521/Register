@@ -20,9 +20,10 @@ namespace FrameworkDriver_Api.src.Services
         {
             return await _user.CreateAsync(new UserModel 
             { 
-                name = user.Name, 
-                email = user.Email, 
-                pin = user.Pin
+                Name = user.Name, 
+                Email = user.Email, 
+                Password = user.Password,
+                Rol = user.Rol
             });
         }
         public async Task<UserModel> GetUserByIdAsync(string id)
@@ -38,9 +39,10 @@ namespace FrameworkDriver_Api.src.Services
         {
             return await _user.UpdateAsync(id, new UserModel 
             { 
-                name = user.Name, 
-                email = user.Email, 
-                pin = user.Pin
+                Name = user.Name, 
+                Email = user.Email, 
+                Password = user.Password,
+                Rol = user.Rol
             });
         }
         public async Task<bool> DeleteUserAsync(string id)

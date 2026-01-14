@@ -11,9 +11,10 @@ namespace FrameworkDriver_Api.Models
 {
     public class RegisterModel
     {
-        [BsonId(IdGenerator = typeof(StringObjectIdGenerator))]
+        [BsonId(IdGenerator = typeof(StringObjectIdGenerator))] //
         [BsonRepresentation(BsonType.ObjectId)]
         public string Id { get; set; } = null!;
+        
         [BsonRepresentation(BsonType.ObjectId)]
         public string IdClient { get; set; } = null!; // referencia al cliente
         public Status StatusRegister { get; set; } // estado del registro

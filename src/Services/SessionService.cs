@@ -1,11 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices.Marshalling;
 using System.Threading.Tasks;
+using CloudinaryDotNet.Actions;
 using FrameworkDriver_Api.src.Exceptions;
 using FrameworkDriver_Api.src.Interfaces;
 using FrameworkDriver_Api.src.Models;
+using FrameworkDriver_Api.src.Utils;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.IdentityModel.Tokens;
 
@@ -22,6 +25,7 @@ namespace FrameworkDriver_Api.src.Services
             ICrudWithLoad<UserModel> userRepository,
             ISession<SessionModel> sessionRepository,
             EmailService email
+
             )
         {
             _tokenService = tokenService;
@@ -31,28 +35,29 @@ namespace FrameworkDriver_Api.src.Services
         }
 
         // Inicia sesion
-        public async Task<(SessionModel data, string Token)> LogIn(int password)
+        public async Task<(SessionModel data, string Token)> LogIn(string email, string password)
         {
-            var user = await _userRepository.LoadByPinAsync(password).ContinueWith(task =>
+            var user = await _userRepository.LoadByEmailAsync(email).ContinueWith(async task =>
             {
-                if (task.Result == null)
-                {
-                    throw new UnauthorizedAccessException("Invalid credentials");
-                }
+                // valida que el pass sea igual 
+                if (task.Result == null) throw new UnauthorizedAccessException("Invalid credentials");
+
+                var verify = Argon2Hasher.Verify(password, task.Result.Password);
+
+                if (!verify) throw new UnauthorizedAccessException("Invalid credentials");
+                // cuenta el numero de sessiones iniciadas
                 var sesions = _sessionRepository.CountAsync(task.Result.Id).Result;
-                if (sesions >= 3)
-                {
-                    throw new UnauthorizedAccessException("Maximas conexiones activas alcanzadas (3) ");
-                }
+                if (sesions >= 3) throw new UnauthorizedAccessException("Maximas conexiones activas alcanzadas (3) ");
                 return task.Result;
             });
+
             if (user != null)
             {
-                var tokenRefresh = await _tokenService.GenerateRefreshToken(user.Id);
-                var AccesToken = await _tokenService.GenerateToken(user, 1); // Token valido por 1 hora
+                var tokenRefresh = await _tokenService.GenerateRefreshToken(user.Result.Id);
+                var AccesToken = await _tokenService.GenerateToken(user.Result, 1); // Token valido por 1 hora
                 var session = new SessionModel
                 {
-                    UserId = user.Id,
+                    UserId = user.Result.Id,
                     StartTime = DateTime.UtcNow,
                     Status = "Active",
                     Token = tokenRefresh
@@ -84,16 +89,32 @@ namespace FrameworkDriver_Api.src.Services
         // Crea un usuario y una sesion
         public async Task<(SessionModel data, string Token)> SignIn(UserModel user)
         {
-            var response = await _userRepository.CreateAsync(user);
+            var hash = Argon2Hasher.Hash(user.Password);
+            var response = await _userRepository.CreateAsync(new UserModel
+            {
+                Name = user.Name,
+                Email = user.Email,
+                Password = hash,
+                Rol = user.Rol
+            });
 
             // se crea tokens
             var tokenRefresh = await _tokenService.GenerateRefreshToken(response);
             var AccesToken = await _tokenService.GenerateToken(user, 1); // Token valido por 1 hora
 
             await _email.EnviarEmailAsync(
-                    user.email,
+                    user.Email,
                     "Bienvenido a nuestro servicio",
-                    $"<h1>Hola {user.name}</h1><br><article>Este es el medio de comunicacion con el cliente donde se le notifica novedades de lo que pasa con el servio que se le brinda.</article>"
+                    $@"<h1>{user.Name}</h1>
+                    <br>
+                    <article>
+                    Hola, Bienvenido !!! <br>
+                    Este es el medio de comunicacion con el cliente donde se le
+                    notifica novedades de lo que pasa con el servio que se le brinda.
+                    </article>
+                    <article>
+                    Las funciones que hay son para facilitar tu vida...
+                    </article>"
             );
             //  se crea la sesion en db
             return await _sessionRepository.SignIn(new SessionModel
@@ -109,7 +130,12 @@ namespace FrameworkDriver_Api.src.Services
                     throw new UserException("User could not be created");
                 }
 
-                return (task.Result, AccesToken);
+                return (new SessionModel
+                {
+                    Id = task.Result.Id,
+                    UserId = task.Result.UserId,
+                    Token = tokenRefresh
+                }, AccesToken);
             });
         }
 
@@ -117,15 +143,6 @@ namespace FrameworkDriver_Api.src.Services
         public async Task<bool> ValidEmail(string email)
         {
             return await _userRepository.LoadByEmailAsync(email).ContinueWith(task =>
-            {
-                return task.Result != null;
-            });
-        }
-
-        // Valida si el pin ya existe
-        public Task<bool> ValidPin(int pin)
-        {
-            return _userRepository.LoadByPinAsync(pin).ContinueWith(task =>
             {
                 return task.Result != null;
             });
@@ -139,6 +156,11 @@ namespace FrameworkDriver_Api.src.Services
             var response = await _sessionRepository.UpdateTokenRefresh(tokenAntiguo, tokenNew, idUser);
             if (response != false) return (tokenNew, tokenSistem);
             throw new FailedException("Fallo actualizacion de token");
+        }
+
+        public async Task<IEnumerable<SessionModel>> OpenSessions(string idUser)
+        {
+            return await _sessionRepository.OpenSessions(idUser);
         }
     }
 }

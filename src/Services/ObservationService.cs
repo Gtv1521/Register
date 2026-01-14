@@ -1,29 +1,33 @@
+using System.Globalization;
+using CloudinaryDotNet.Actions;
 using FrameworkDriver_Api.Models;
 using FrameworkDriver_Api.src.Dto;
 using FrameworkDriver_Api.src.Interfaces;
 using FrameworkDriver_Api.src.Models;
+using FrameworkDriver_Api.src.Projections;
 using FrameworkDriver_Api.src.Utils;
 using FrameworkDriver_Api.src.Utils.Interfaces;
+using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace FrameworkDriver_Api.src.Services
 {
     public class ObservationService
     {
-        private readonly ICrud<ObservationModel> _observation;
+        private readonly ILoadAllId<ObservationModel> _observation;
         private readonly FileUpload _fileUpload;
         private readonly ILogger<ObservationService> _logger;
         private readonly WhatsappInterface _wh;
-        private readonly ICrud<RegisterModel> _register;
-        private readonly ICrud<ClientModel> _client;
+        private readonly IAddFilter<RegisterModel, ListRegistersProjection> _register;
+        private readonly IAddFilter<ClientModel, ClientModel> _client;
         private readonly EmailService _emailService;
 
         public ObservationService(
-            ICrud<ObservationModel> observation,
+            ILoadAllId<ObservationModel> observation,
             FileUpload file,
             ILogger<ObservationService> logger,
             WhatsappInterface whatsapp,
-            ICrud<RegisterModel> register,
-            ICrud<ClientModel> client,
+            IAddFilter<RegisterModel, ListRegistersProjection> register,
+            IAddFilter<ClientModel, ClientModel> client,
             EmailService emailService
             )
         {
@@ -99,10 +103,15 @@ namespace FrameworkDriver_Api.src.Services
                             </html>"
                     );
                 }
+
+
                 //  se envia mensaje a whatsapp
                 if (observation.NotificaWhatsapp)
                 {
-                    await _wh.SendMenssageAsync(observation.Description, client.Phone, FileData);
+                    //  *🔹 Actualización de Registro*
+                    var mensajeWhatsapp = $"*Actualización de Registro*\n\n*Estado:* {register.StatusRegister}.\n\n*Observación:* \n{observation.Description}.\n\n*Cliente notificado*";
+                    // envia mensaje a whatsapp
+                    await _wh.SendMenssageAsync(mensajeWhatsapp, client.Phone, FileData);
                 }
 
                 //  retorna un id de objeto creado
@@ -128,6 +137,18 @@ namespace FrameworkDriver_Api.src.Services
         {
             return await _observation.GetByIdAsync(id);
         }
-        // public async Task<ObservationModel> GetAll
+
+        public async Task<IEnumerable<ObservationModel>> GetAllById(string IdRegister, int page, int size)
+        {
+            return await _observation.GetAllIdAsync(IdRegister, page, size);
+        }
+
+        public async Task<bool> Update(string id, ObservationDTO item)
+        {
+            return await _observation.UpdateAsync(id, new ObservationModel
+            {
+                // falte hacer paso de los datos para guardarlo     
+            });
+        }
     }
 }

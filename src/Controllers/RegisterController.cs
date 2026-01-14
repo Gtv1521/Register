@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
 using FrameworkDriver_Api.Models;
@@ -47,6 +48,15 @@ namespace FrameworkDriver_Api.src.Controllers
         {
             var result = await _registerService.GetRegisterByIdAsync(id);
             return Ok(result);
+        }
+
+        [HttpGet("Filter/{filter}")]
+        public async Task<IActionResult> FilterRegister(string filter)
+        {
+            if (filter == null) return BadRequest("Debe ingresar un dato para buscar");
+            var response = await _registerService.Filter(filter);
+            if (response.Count() == 0) return NotFound("No hay datos");
+            return Ok(response);
         }
 
         [HttpPut("{id}")]

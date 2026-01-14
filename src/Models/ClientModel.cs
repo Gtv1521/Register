@@ -14,7 +14,7 @@ namespace FrameworkDriver_Api.Models
     {
         [BsonId(IdGenerator = typeof(StringObjectIdGenerator))]
         [BsonRepresentation(BsonType.ObjectId)]
-        public string Id { get; set; } = string.Empty;
+        public string Id { get; set; } = null!;
         [Required]
         public string Name { get; set; } = null!;
         [Required]

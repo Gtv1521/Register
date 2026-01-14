@@ -1,11 +1,15 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.Metadata.Ecma335;
 using System.Threading.Tasks;
 using FrameworkDriver_Api.src.Dto;
 using FrameworkDriver_Api.src.Exceptions;
+using FrameworkDriver_Api.src.Interfaces;
 using FrameworkDriver_Api.src.Models;
 using FrameworkDriver_Api.src.Services;
+using FrameworkDriver_Api.src.Utils;
+using Isopoh.Cryptography.Argon2;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 
@@ -17,21 +21,26 @@ namespace FrameworkDriver_Api.src.Controllers
     {
         private readonly ILogger<SessionController> _logger;
         private readonly SessionService _sessionService;
-        public SessionController(ILogger<SessionController> logger, SessionService sessionService)
+        public SessionController(
+            ILogger<SessionController> logger,
+            SessionService sessionService
+            )
         {
             _logger = logger;
             _sessionService = sessionService;
         }
 
         [HttpPost("login")]
-        public async Task<IActionResult> LogIn([FromBody] int password)
+        public async Task<IActionResult> LogIn([FromBody] LoginRequest login)
         {
+            if (!ModelState.IsValid) BadRequest(ModelState.Values);
             try
             {
-                var (data, token) = await _sessionService.LogIn(password);
+                var (data, token) = await _sessionService.LogIn(login.Email, login.Password);
                 _logger.LogInformation("User logged in successfully: {UserId}", data.UserId);
 
-                Response.Cookies.Append("AuthToken", token, new CookieOptions
+
+                Response.Cookies.Append("access_token", token, new CookieOptions
                 {
                     HttpOnly = true,
                     Secure = true,
@@ -39,7 +48,7 @@ namespace FrameworkDriver_Api.src.Controllers
                     Expires = DateTime.UtcNow.AddHours(1)
                 });
 
-                Response.Cookies.Append("RefreshToken", data.Token, new CookieOptions
+                Response.Cookies.Append("refresh_token", data.Token, new CookieOptions
                 {
                     HttpOnly = true,
                     Secure = true,
@@ -47,7 +56,13 @@ namespace FrameworkDriver_Api.src.Controllers
                     Expires = DateTime.UtcNow.AddMonths(2)
                 });
 
-                return Ok(new { id = data.UserId, accessToken = token, refreshToken = data.Token });
+                return Ok(new
+                {
+                    idUser = data.UserId,
+                    idSession = data.Id,
+                    accessToken = token,
+                    refreshToken = data.Token,
+                });
             }
             catch (UnauthorizedAccessException uaEx)
             {
@@ -86,7 +101,7 @@ namespace FrameworkDriver_Api.src.Controllers
             try
             {
                 var isActive = await _sessionService.IsSessionActive(sessionId);
-                return Ok(new { isActive });
+                return Ok(isActive);
             }
             catch (System.Exception ex)
             {
@@ -95,19 +110,35 @@ namespace FrameworkDriver_Api.src.Controllers
             }
         }
 
-        [HttpPost("signin")]
-        public async Task<IActionResult> SignIn([FromBody] UserDto user)
+        [HttpGet("openSessions/{IdUser}")]
+        public async Task<IActionResult> OpenSessions(string IdUser)
         {
             try
             {
-                var (data, token) = await _sessionService.SignIn(new UserModel
+                var response = await _sessionService.OpenSessions(IdUser);
+                return Ok(response);
+            }
+            catch (SystemException ex)
+            {
+                return BadRequest($"Fallo,{ex.Message}");
+            }
+        }
+
+        [HttpPost("signin")]
+        public async Task<IActionResult> SignIn([FromBody] UserDto user)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState.Values);
+            try
+            {
+                (var data, var token) = await _sessionService.SignIn(new UserModel
                 {
-                    name = user.Name,
-                    email = user.Email,
-                    pin = user.Pin
+                    Name = user.Name,
+                    Email = user.Email,
+                    Password = user.Password,
+                    Rol = user.Rol
                 });
 
-                Response.Cookies.Append("AuthToken", token, new CookieOptions
+                Response.Cookies.Append("access_token", token, new CookieOptions
                 {
                     HttpOnly = true,
                     Secure = true,
@@ -115,14 +146,20 @@ namespace FrameworkDriver_Api.src.Controllers
                     Expires = DateTime.UtcNow.AddHours(1)
                 });
 
-                Response.Cookies.Append("RefreshToken", data.Token, new CookieOptions
+                Response.Cookies.Append("refresh_token", data.Token, new CookieOptions
                 {
                     HttpOnly = true,
                     Secure = true,
                     SameSite = SameSiteMode.None,
                     Expires = DateTime.UtcNow.AddMonths(2)
                 });
-                return Ok(new { id = data.UserId, accessToken = token, refreshToken = data.Token });
+                return Ok(new
+                {
+                    idUser = data.UserId,
+                    idSession = data.Id,
+                    accessToken = token,
+                    refreshToken = data.Token,
+                });
             }
             catch (PinException pEx)
             {

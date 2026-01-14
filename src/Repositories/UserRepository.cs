@@ -22,10 +22,9 @@ namespace FrameworkDriver_Api.src.Repositories
 
         public async Task<string> CreateAsync(UserModel item)
         {
-            if (!GetMailAsync(item.email).Result.Item1)
+            if (!GetMailAsync(item.Email).Result.Item1)
             {
-                if (UniquePinAsync((item.pin)).Result.Item1) return await _users.InsertOneAsync(item).ContinueWith(task => item.Id);
-                else throw new PinException("El pin ya existe debe ser unico");
+                 return await _users.InsertOneAsync(item).ContinueWith(task => item.Id);
             }
             else
             {
@@ -53,30 +52,23 @@ namespace FrameworkDriver_Api.src.Repositories
             return await _users.Find(user => user.Id == id).FirstOrDefaultAsync();
         }
 
-        public async Task<UserModel> LoadByEmailAsync(string email)
+        public async Task<UserModel?> LoadByEmailAsync(string email)
         {
-            return await GetMailAsync(email).ContinueWith(task =>
-            {
-                if (task.Result.Item2 == null) throw new KeyNotFoundException("no se encontro el usuario");
-                return task.Result.Item2;
-            });
+            return await GetMailAsync(email).ContinueWith(task => task.Result.Item2);
         }
 
-        public async Task<UserModel?> LoadByPinAsync(int pin)
-        {
-            return await UniquePinAsync(pin).ContinueWith(task =>
-            {;
-                return task.Result.objecto;
-            });
-        }
+        // public async Task<UserModel?> LoadByPinAsync(int pin)
+        // {
+        //     return await UniquePinAsync(pin).ContinueWith(task => task.Result.objecto);
+        // }
 
         public async Task<bool> UpdateAsync(string id, UserModel item)
         {
 
             var updatedUser = Builders<UserModel>.Update
-                .Set(u => u.name, item.name)
-                .Set(u => u.email, item.email)
-                .Set(u => u.pin, item.pin);
+                .Set(u => u.Name, item.Name)
+                .Set(u => u.Email, item.Email)
+                .Set(u => u.Password, item.Password);
 
             return await _users.UpdateOneAsync(user => user.Id == id, updatedUser)
                 .ContinueWith(task => task.Result.ModifiedCount > 0);
@@ -85,14 +77,22 @@ namespace FrameworkDriver_Api.src.Repositories
         //  valida que el mail no exista
         private async Task<(bool, UserModel?)> GetMailAsync(string mail)
         {
-            var response = await _users.Find(user => user.email == mail).FirstOrDefaultAsync();
-            return (response != null, response); // si es null no existe el mail
+            return await _users.Find(user => user.Email == mail).FirstOrDefaultAsync()
+            .ContinueWith(task =>
+            {
+                var user = task.Result; // O task.GetAwaiter().GetResult()
+                return (user != null, user);
+            });
         }
 
-        private async Task<(bool status, UserModel? objecto)> UniquePinAsync(int pin)
-        {
-            var user = await _users.Find(u => u.pin == pin).FirstOrDefaultAsync();
-            return (user == null, user); // si es null el pin no existe
-        }
+        // private async Task<(bool status, UserModel? objecto)> UniquePinAsync(int pin)
+        // {
+        //     return await _users.Find(u => u.pin == pin).FirstOrDefaultAsync()
+        //     .ContinueWith(task =>
+        //     {
+        //         var user = task.Result; 
+        //         return (user == null, user); // si es null el pin no existe
+        //     });
+        // }
     }
 }
