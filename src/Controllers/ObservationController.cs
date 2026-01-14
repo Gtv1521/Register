@@ -72,17 +72,17 @@ namespace FrameworkDriver_Api.src.Controllers
                 return Problem(ex.Message);
             }
         }
-  
-        [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateObservation(string id, [FromBody] ObservationDTO item)
+
+        [HttpPost("{id}")]
+        public async Task<IActionResult> UpdateObservation(string id, [FromForm] UpdateObservationDTO item)
         {
-            if(id == null) return BadRequest("El id no puede estar vacio");
-            if(!ModelState.IsValid) return BadRequest(ModelState.Values.SelectMany(x => x.Errors));
+            if (id == null) return BadRequest("El id no puede estar vacio");
+            if (!ModelState.IsValid) return BadRequest(ModelState.Values.SelectMany(x => x.Errors));
 
             try
             {
                 var response = await _observationService.Update(id, item);
-                if(!response) return NotFound("No se encontro dato a actualizar");
+                if (!response) return NotFound("No se encontro dato a actualizar");
                 return Ok(response);
             }
             catch (System.Exception ex)
@@ -90,6 +90,6 @@ namespace FrameworkDriver_Api.src.Controllers
                 return Problem(ex.Message);
             }
         }
-  
+
     }
 }

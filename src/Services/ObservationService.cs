@@ -143,12 +143,96 @@ namespace FrameworkDriver_Api.src.Services
             return await _observation.GetAllIdAsync(IdRegister, page, size);
         }
 
-        public async Task<bool> Update(string id, ObservationDTO item)
+        public async Task<bool> Update(string id, UpdateObservationDTO item)
         {
-            return await _observation.UpdateAsync(id, new ObservationModel
+            try
             {
-                // falte hacer paso de los datos para guardarlo     
-            });
+                var ObDB = await _observation.GetByIdAsync(id);
+                // borrar los id que fueron eliminados en el front
+                if (item.DeletedPhotos != null && item.DeletedPhotos.Any())
+                {
+                    foreach (var data in item.DeletedPhotos)
+                    {
+                        if (await _fileUpload.DeleteMedia(data) == false) _logger.LogInformation("error al borrar el recurso de cloudinary" + data);
+                        var photoRemove = ObDB.Photos.FirstOrDefault(c => c.Id == data);
+                        if (photoRemove != null) ObDB.Photos.Remove(photoRemove);
+
+                    }
+                }
+                //guardar las imagenes nuevas
+                if (item.NewPhotos != null && item.NewPhotos.Any())
+                {
+                    foreach (var data in item.NewPhotos)
+                    {
+                        (string? image, string? idImage) = await _fileUpload.UploadMedia(data, "observation");
+                        if (image != null && idImage != null)
+                        {
+                            ObDB.Photos.Add(new PhotosModel
+                            {
+                                Id = idImage,
+                                Photo = image,
+                            });
+                        }
+                        // si existe un error al subir un archivo se notifica.
+                        else
+                        {
+                            _logger.LogInformation("Error al subir el archivo " + data);
+                        }
+
+                    }
+                }
+                // actualizar la descripcion y el tipo
+                ObDB.Description = item.Description;
+
+                var register = await _register.GetByIdAsync(ObDB.IdRegister);
+                var client = await _client.GetByIdAsync(register.IdClient);
+                //  se envia mensaje a correo
+                if (item.NotificaEmail)
+                {
+                    var imagenesHtml = string.Join("<br>", ObDB.Photos.Select(url =>
+                        $"<img src=\"{url.Photo}\" alt=\"Evidencia\" style=\"max-width: 600px; height: auto; display: block; margin: 10px 0;\" />"
+                    ));
+
+                    await _emailService.EnviarEmailAsync(
+                        client.Email,
+                        "Actualizacion",
+                        $@"
+                            <html>
+                            <body style='font-family: Arial, sans-serif;'>
+                                <h2>Actualización de tu registro</h2>
+                                <h4>Buen día</h4>
+                                <p><strong>Estado:</strong> {register.StatusRegister}</p>
+                                <p><strong>Observación:</strong></p>
+                                <p>{item.Description.Replace("\n", "<br>")}</p>
+
+                                <h3>Evidencias:</h3>
+                                {imagenesHtml}
+
+                                <hr>
+                                <p>Gracias por usar nuestro sistema.</p>
+                            </body>
+                            </html>"
+                    );
+                }
+
+
+                //  se envia mensaje a whatsapp
+                if (item.NotificaWhatsapp)
+                {
+                    //  *🔹 Actualización de Registro*
+                    var mensajeWhatsapp = $"*Actualización de Registro*\n\n*Estado:* {register.StatusRegister}.\n\n*Observación:* \n{item.Description}.\n\n*Cliente notificado*";
+                    // envia mensaje a whatsapp
+                    await _wh.SendMenssageAsync(mensajeWhatsapp, client.Phone, ObDB.Photos);
+                }
+
+                return await _observation.UpdateAsync(id, ObDB);
+            }
+            catch (System.Exception)
+            {
+
+                throw new Exception("Error al actualizar la observacion.");
+            }
+
         }
     }
 }

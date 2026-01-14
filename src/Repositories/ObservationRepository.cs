@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using FrameworkDriver_Api.Models;
 using FrameworkDriver_Api.src.Interfaces;
 using FrameworkDriver_Api.Utils;
+using MongoDB.Bson;
 using MongoDB.Driver;
 
 namespace FrameworkDriver_Api.src.Repositories
@@ -53,10 +54,14 @@ namespace FrameworkDriver_Api.src.Repositories
 
         public async Task<bool> UpdateAsync(string id, ObservationModel item)
         {
-            var filter = Builders<ObservationModel>.Filter.Eq(x => x.Id, id);
-            var update = Builders<ObservationModel>.Update.Set(x => x.Description, item.Description);
+            if (!ObjectId.TryParse(id, out var objectId)) throw new ArgumentException("ID inválido");
 
-            return await _observations.UpdateOneAsync(filter, update).ContinueWith(task => task.Result.ModifiedCount > 0);
+            var filter = Builders<ObservationModel>.Filter.Eq(x => x.Id, id);
+            //var update = Builders<ObservationModel>.Update.Set(x => x.Description, item.Description);
+
+            var result = await _observations.ReplaceOneAsync(filter, item);
+            //await _observations.UpdateOneAsync(filter, update).ContinueWith(task => task.Result.ModifiedCount > 0);
+            return result.ModifiedCount > 0;
         }
     }
 }
