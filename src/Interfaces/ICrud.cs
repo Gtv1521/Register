@@ -52,9 +52,18 @@ namespace FrameworkDriver_Api.src.Interfaces
     public interface ICrudWithLoad<T> : ICrud<T>, ILoadMail<T>
     { }
 
-    public interface IAddFilter<T, P> : ICrud<T>
+    public interface IAddFilter<T, P> : ICrud<T>, IFilter<P>
+    {}
+
+    public interface IFilter<T>
     {
-        Task<IEnumerable<P>> FilterData(string text);
+        Task<IEnumerable<T>> FilterData(string text);
+        
+    }
+
+    public interface IRegisters<T, P, R> : IReadOne<T>, IReadAll<R>, IFilter<P>, ICreate<T>, IUpdate<T>, IDelete
+    {
+        
     }
 
     public interface ILoadAllId<T> : ICrud<T>, IReadAllId<T>

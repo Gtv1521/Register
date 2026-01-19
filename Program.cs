@@ -115,7 +115,7 @@ builder.Services.AddScoped<IToken<UserModel>, Token>();
 // add repositories
 builder.Services.AddScoped<IAddFilter<ClientModel, ClientModel>, ClientRepository>();
 builder.Services.AddScoped<ICrudWithLoad<UserModel>, UserRepository>();
-builder.Services.AddScoped<IAddFilter<RegisterModel, ListRegistersProjection>, RegisterRepository>();
+builder.Services.AddScoped<IRegisters<RegisterModel, ListRegistersProjection, RegisterObsCliProjection>, RegisterRepository>();
 builder.Services.AddScoped<ILoadAllId<ObservationModel>, ObservationRepository>();
 builder.Services.AddScoped<ISession<SessionModel>, SessionRepository>();
 builder.Services.AddScoped<QrInterface, QrService>();

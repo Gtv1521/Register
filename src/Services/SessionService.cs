@@ -37,27 +37,28 @@ namespace FrameworkDriver_Api.src.Services
         // Inicia sesion
         public async Task<(SessionModel data, string Token)> LogIn(string email, string password)
         {
-            var user = await _userRepository.LoadByEmailAsync(email).ContinueWith(async task =>
-            {
-                // valida que el pass sea igual 
-                if (task.Result == null) throw new UnauthorizedAccessException("Invalid credentials");
+            var user = await _userRepository.LoadByEmailAsync(email);
 
-                var verify = Argon2Hasher.Verify(password, task.Result.Password);
+            if (user == null)
+                throw new UnauthorizedAccessException("Invalid credentials");
 
-                if (!verify) throw new UnauthorizedAccessException("Invalid credentials");
-                // cuenta el numero de sessiones iniciadas
-                var sesions = _sessionRepository.CountAsync(task.Result.Id).Result;
-                if (sesions >= 3) throw new UnauthorizedAccessException("Maximas conexiones activas alcanzadas (3) ");
-                return task.Result;
-            });
+            var verify = Argon2Hasher.Verify(password, user.Password);
+            if (!verify)
+                throw new UnauthorizedAccessException("Invalid credentials");
+
+            var sessions = await _sessionRepository.CountAsync(user.Id);
+            if (sessions >= 3)
+                throw new MaxConnectionException("Máximas conexiones activas alcanzadas (3)");
+
+
 
             if (user != null)
             {
-                var tokenRefresh = await _tokenService.GenerateRefreshToken(user.Result.Id);
-                var AccesToken = await _tokenService.GenerateToken(user.Result, 1); // Token valido por 1 hora
+                var tokenRefresh = await _tokenService.GenerateRefreshToken(user.Id);
+                var AccesToken = await _tokenService.GenerateToken(user, 1); // Token valido por 1 hora
                 var session = new SessionModel
                 {
-                    UserId = user.Result.Id,
+                    UserId = user.Id,
                     StartTime = DateTime.UtcNow,
                     Status = "Active",
                     Token = tokenRefresh

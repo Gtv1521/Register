@@ -17,7 +17,7 @@ namespace FrameworkDriver_Api.src.Services
         private readonly FileUpload _fileUpload;
         private readonly ILogger<ObservationService> _logger;
         private readonly WhatsappInterface _wh;
-        private readonly IAddFilter<RegisterModel, ListRegistersProjection> _register;
+        private readonly IRegisters<RegisterModel, ListRegistersProjection, RegisterObsCliProjection> _register;
         private readonly IAddFilter<ClientModel, ClientModel> _client;
         private readonly EmailService _emailService;
 
@@ -26,7 +26,7 @@ namespace FrameworkDriver_Api.src.Services
             FileUpload file,
             ILogger<ObservationService> logger,
             WhatsappInterface whatsapp,
-            IAddFilter<RegisterModel, ListRegistersProjection> register,
+            IRegisters<RegisterModel, ListRegistersProjection, RegisterObsCliProjection> register,
             IAddFilter<ClientModel, ClientModel> client,
             EmailService emailService
             )

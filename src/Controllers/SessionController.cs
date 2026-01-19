@@ -67,14 +67,19 @@ namespace FrameworkDriver_Api.src.Controllers
             catch (UnauthorizedAccessException uaEx)
             {
                 _logger.LogWarning(uaEx.Message, "Unauthorized login attempt");
-                return Unauthorized(uaEx.Message);
+                return Unauthorized(new { message = uaEx.Message });
+            }
+            catch(MaxConnectionException ex)
+            {
+                _logger.LogInformation(ex.Message);
+                return BadRequest(new { message = ex.Message });
             }
             catch (System.Exception ex)
             {
                 _logger.LogError(ex.Message, "Error during login");
                 if (!string.IsNullOrEmpty(ex.Message))
                 {
-                    return BadRequest(ex.Message);
+                    return BadRequest(new { message = ex.Message });
                 }
                 return StatusCode(500, "Internal server error");
             }

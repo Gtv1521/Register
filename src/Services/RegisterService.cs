@@ -9,10 +9,10 @@ namespace FrameworkDriver_Api.src.Services
 {
     public class RegisterService
     {
-        private readonly IAddFilter<RegisterModel, ListRegistersProjection> _registerRepository;
+        private readonly IRegisters<RegisterModel, ListRegistersProjection, RegisterObsCliProjection> _registerRepository;
         private readonly QrInterface _qrService;
         public RegisterService(
-            IAddFilter<RegisterModel, ListRegistersProjection> registerRepository,
+            IRegisters<RegisterModel, ListRegistersProjection, RegisterObsCliProjection> registerRepository,
             QrInterface qrService
             )
         {
@@ -43,7 +43,7 @@ namespace FrameworkDriver_Api.src.Services
             return await _registerRepository.FilterData(filter);
         }
 
-        public async Task<IEnumerable<RegisterModel>> GetAllRegistersAsync(int pageNumber, int pageSize)
+        public async Task<IEnumerable<RegisterObsCliProjection>> GetAllRegistersAsync(int pageNumber, int pageSize)
         {
             return await _registerRepository.GetAllAsync(pageNumber, pageSize);
         }

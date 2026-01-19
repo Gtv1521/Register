@@ -16,14 +16,16 @@ using MongoDB.Driver;
 
 namespace FrameworkDriver_Api.src.Repositories
 {
-    public class RegisterRepository : IAddFilter<RegisterModel, ListRegistersProjection>
+    public class RegisterRepository : IRegisters<RegisterModel, ListRegistersProjection, RegisterObsCliProjection>
     {
         private readonly IMongoCollection<RegisterModel> _register;
         private readonly IMongoCollection<ClientModel> _client;
+        private readonly IMongoCollection<ObservationModel> _observation;
         public RegisterRepository(Context context)
         {
             _register = context.GetCollection<RegisterModel>("Registers");
             _client = context.GetCollection<ClientModel>("Clients");
+            _observation = context.GetCollection<ObservationModel>("Observations");
         }
 
         public Task<string> CreateAsync(RegisterModel item)
@@ -53,13 +55,29 @@ namespace FrameworkDriver_Api.src.Repositories
                 .ToListAsync();
         }
 
-        public Task<IEnumerable<RegisterModel>> GetAllAsync(int pageNumber, int pageSize)
+        public async Task<IEnumerable<RegisterObsCliProjection>> GetAllAsync(int pageNumber, int pageSize)
         {
-            return _register.Find(_ => true)
+            return await _register.Aggregate()
+            .Match(_ => true)
+            .Lookup(
+                foreignCollection: _client,
+                localField: x => x.IdClient,
+                foreignField: x => x.Id,
+                @as: (RegisterObsCliProjection x) => x.Clients
+            )
+            .Lookup(
+                foreignCollection: _observation,
+                localField: c => c.Id,
+                foreignField: c => c.IdRegister,
+                @as: (RegisterObsCliProjection x) => x.Observation
+            )
+            .Unwind(x => x.Observation, new AggregateUnwindOptions<RegisterObsCliProjection>
+            {
+                PreserveNullAndEmptyArrays = true
+            })
             .Skip((pageNumber - 1) * pageSize)
             .Limit(pageSize)
-            .ToListAsync()
-            .ContinueWith(task => (IEnumerable<RegisterModel>)task.Result);
+            .ToListAsync();
         }
 
         public async Task<RegisterModel> GetByIdAsync(string id)
