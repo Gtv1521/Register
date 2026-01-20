@@ -12,6 +12,7 @@ using FrameworkDriver_Api.src.Projections;
 using FrameworkDriver_Api.Utils;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson;
+using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
 
 namespace FrameworkDriver_Api.src.Repositories
@@ -21,11 +22,13 @@ namespace FrameworkDriver_Api.src.Repositories
         private readonly IMongoCollection<RegisterModel> _register;
         private readonly IMongoCollection<ClientModel> _client;
         private readonly IMongoCollection<ObservationModel> _observation;
-        public RegisterRepository(Context context)
+        private ILogger<RegisterRepository> _logger;
+        public RegisterRepository(Context context, ILogger<RegisterRepository> logger)
         {
             _register = context.GetCollection<RegisterModel>("Registers");
             _client = context.GetCollection<ClientModel>("Clients");
             _observation = context.GetCollection<ObservationModel>("Observations");
+            _logger = logger;
         }
 
         public Task<string> CreateAsync(RegisterModel item)
@@ -57,27 +60,56 @@ namespace FrameworkDriver_Api.src.Repositories
 
         public async Task<IEnumerable<RegisterObsCliProjection>> GetAllAsync(int pageNumber, int pageSize)
         {
-            return await _register.Aggregate()
-            .Match(_ => true)
-            .Lookup(
-                foreignCollection: _client,
-                localField: x => x.IdClient,
-                foreignField: x => x.Id,
-                @as: (RegisterObsCliProjection x) => x.Clients
-            )
-            .Lookup(
-                foreignCollection: _observation,
-                localField: c => c.Id,
-                foreignField: c => c.IdRegister,
-                @as: (RegisterObsCliProjection x) => x.Observation
-            )
-            .Unwind(x => x.Observation, new AggregateUnwindOptions<RegisterObsCliProjection>
+            var skip = (pageNumber - 1) * pageSize;
+
+            var pipeline = _register.Aggregate()
+            .As<BsonDocument>()
+        
+            // 🔹 Lookup observación
+            .AppendStage<BsonDocument>(new BsonDocument("$lookup", new BsonDocument
             {
-                PreserveNullAndEmptyArrays = true
-            })
-            .Skip((pageNumber - 1) * pageSize)
-            .Limit(pageSize)
-            .ToListAsync();
+                { "from", "Observations" },
+                { "let", new BsonDocument("registerId", "$_id") },
+                { "pipeline", new BsonArray
+                    {
+                        new BsonDocument("$match", new BsonDocument("$expr",
+                            new BsonDocument("$eq", new BsonArray { "$IdRegister", "$$registerId" })
+                        )),
+                        new BsonDocument("$limit", 1)
+                    }
+                },
+                { "as", "Observation" }   // 👈 coincide con tu propiedad
+            }))
+        
+            .AppendStage<BsonDocument>(new BsonDocument("$unwind", new BsonDocument
+            {
+                { "path", "$Observation" },
+                { "preserveNullAndEmptyArrays", true }
+            }))
+        
+            // 🔹 Lookup cliente
+            .AppendStage<BsonDocument>(new BsonDocument("$lookup", new BsonDocument
+            {
+                { "from", "Clients" },
+                { "localField", "IdClient" },
+                { "foreignField", "_id" },
+                { "as", "Clients" }   // 👈 coincide con la propiedad
+            }))
+        
+            .AppendStage<BsonDocument>(new BsonDocument("$unwind", new BsonDocument
+            {
+                { "path", "$Clients" },   // 👈 ahora sí correcto
+                { "preserveNullAndEmptyArrays", true }
+            }))
+            .Skip(skip)
+            .Limit(pageSize);
+
+            var bsonResult = await pipeline.ToListAsync();
+
+            var result = bsonResult
+                .Select(doc => BsonSerializer.Deserialize<RegisterObsCliProjection>(doc))
+                .ToList();
+            return result;
         }
 
         public async Task<RegisterModel> GetByIdAsync(string id)
