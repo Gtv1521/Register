@@ -64,7 +64,7 @@ namespace FrameworkDriver_Api.src.Repositories
 
             var pipeline = _register.Aggregate()
             .As<BsonDocument>()
-        
+
             // 🔹 Lookup observación
             .AppendStage<BsonDocument>(new BsonDocument("$lookup", new BsonDocument
             {
@@ -80,13 +80,13 @@ namespace FrameworkDriver_Api.src.Repositories
                 },
                 { "as", "Observation" }   // 👈 coincide con tu propiedad
             }))
-        
+
             .AppendStage<BsonDocument>(new BsonDocument("$unwind", new BsonDocument
             {
                 { "path", "$Observation" },
                 { "preserveNullAndEmptyArrays", true }
             }))
-        
+
             // 🔹 Lookup cliente
             .AppendStage<BsonDocument>(new BsonDocument("$lookup", new BsonDocument
             {
@@ -95,7 +95,7 @@ namespace FrameworkDriver_Api.src.Repositories
                 { "foreignField", "_id" },
                 { "as", "Clients" }   // 👈 coincide con la propiedad
             }))
-        
+
             .AppendStage<BsonDocument>(new BsonDocument("$unwind", new BsonDocument
             {
                 { "path", "$Clients" },   // 👈 ahora sí correcto
