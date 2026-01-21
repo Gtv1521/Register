@@ -157,7 +157,7 @@ builder.Services.AddAuthorization();
 
 // Agrega policía cors 
 var allowedOrigins = new[] {
-    // "http://localhost:4200",
+    "http://localhost:4200",
     "https://localhost:4200",
     "https://register.local:4200",
     "https://8x8d4rkv-4200.use2.devtunnels.ms",
