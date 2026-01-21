@@ -33,13 +33,13 @@ namespace FrameworkDriver_Api.src.Utils
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                 new Claim(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64)
             };
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"] ?? throw new InvalidOperationException("JWT Key not configured")));
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
             var descriptor = new SecurityTokenDescriptor
             {
                 Issuer = _configuration["Jwt:Issuer"],
-                Audience = _configuration["Jwt:Audience"] ?? _configuration["Jwt:Issuer"],
+                Audience = _configuration["Jwt:Audience"]!,
                 Subject = new ClaimsIdentity(claims),
                 NotBefore = DateTime.UtcNow,
                 Expires = DateTime.UtcNow.AddHours(timeInHours),

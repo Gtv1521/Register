@@ -21,13 +21,16 @@ namespace FrameworkDriver_Api.src.Controllers
     {
         private readonly ILogger<SessionController> _logger;
         private readonly SessionService _sessionService;
+        private readonly IWebHostEnvironment _env;
         public SessionController(
             ILogger<SessionController> logger,
-            SessionService sessionService
+            SessionService sessionService,
+            IWebHostEnvironment env
             )
         {
             _logger = logger;
             _sessionService = sessionService;
+            _env = env;
         }
 
         [HttpPost("login")]
@@ -36,25 +39,39 @@ namespace FrameworkDriver_Api.src.Controllers
             if (!ModelState.IsValid) BadRequest(ModelState.Values);
             try
             {
+                var isDevelopment = _env.IsDevelopment();
                 var (data, token) = await _sessionService.LogIn(login.Email, login.Password);
                 _logger.LogInformation("User logged in successfully: {UserId}", data.UserId);
 
 
+                // Access Token (corto plazo - 15-60 minutos)
                 Response.Cookies.Append("access_token", token, new CookieOptions
                 {
                     HttpOnly = true,
                     Secure = true,
                     SameSite = SameSiteMode.None,
-                    Expires = DateTime.UtcNow.AddHours(1)
+                    Expires = DateTime.UtcNow.AddMinutes(15), // Reducir a 15 minutos
+                    Path = "/",
+                    Domain = null,
+                    IsEssential = true
                 });
 
+                // Refresh Token (largo plazo - almacenado en DB)
                 Response.Cookies.Append("refresh_token", data.Token, new CookieOptions
                 {
                     HttpOnly = true,
                     Secure = true,
                     SameSite = SameSiteMode.None,
-                    Expires = DateTime.UtcNow.AddMonths(2)
+                    Expires = DateTime.UtcNow.AddDays(7), // Reducir a 7 días máximo
+                    Path = "/",
+                    Domain = null,
+                    IsEssential = true
                 });
+
+                // Headers de seguridad adicionales
+                Response.Headers.Append("X-Content-Type-Options", "nosniff");
+                Response.Headers.Append("X-Frame-Options", "DENY");
+                Response.Headers.Append("X-XSS-Protection", "1; mode=block");
 
                 return Ok(new
                 {
@@ -69,7 +86,7 @@ namespace FrameworkDriver_Api.src.Controllers
                 _logger.LogWarning(uaEx.Message, "Unauthorized login attempt");
                 return Unauthorized(new { message = uaEx.Message });
             }
-            catch(MaxConnectionException ex)
+            catch (MaxConnectionException ex)
             {
                 _logger.LogInformation(ex.Message);
                 return BadRequest(new { message = ex.Message });
