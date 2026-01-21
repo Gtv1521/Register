@@ -45,54 +45,55 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
     });
 
-
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
     {
-        options.TokenValidationParameters = new TokenValidationParameters
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = builder.Configuration["Jwt:Issuer"],
+        ValidAudience = builder.Configuration["Jwt:Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
+    };
+    // varify if token valid
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
         {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-            ValidIssuer = builder.Configuration["Jwt:Issuer"],
-            ValidAudience = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
-        };
+            if (context.Request.Cookies.ContainsKey("access_token"))
+            {
+                context.Token = context.Request.Cookies["access_token"];
+            }
+            return Task.CompletedTask;
+        },
 
-        options.Events = new JwtBearerEvents
+        OnChallenge = context =>
         {
-            OnTokenValidated = context =>
+            context.HandleResponse(); // Evitar el manejo predeterminado
+            context.Response.ContentType = "application/json";
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+
+            var response = new { Message = "No autorizado. Token invalido o expirado." };
+            var jsonResponse = JsonSerializer.Serialize(response);
+            return context.Response.WriteAsync(jsonResponse);
+        },
+
+        OnTokenValidated = context =>
+        {
+            var blacklist = context.HttpContext.RequestServices.GetRequiredService<IToken<UserModel>>();
+            var jti = context.Principal?.FindFirst(JwtRegisteredClaimNames.Jti)?.Value;
+
+            if (jti != null && blacklist.IsRevoked(jti))
             {
-                var blacklist = context.HttpContext.RequestServices.GetRequiredService<IToken<UserModel>>();
-                var jti = context.Principal?.FindFirst(JwtRegisteredClaimNames.Jti)?.Value;
-                if (jti != null && blacklist.IsRevoked(jti)) context.Fail("Token revocado");
-                return Task.CompletedTask;
-            },
+                context.Fail("Token revocado");
+            }
 
-            OnMessageReceived = context =>
-            {
-                // Busca la cookie llamada "access_token"
-                if (context.Request.Cookies.ContainsKey("access_token")) context.Token = context.Request.Cookies["access_token"];
-                return Task.CompletedTask;
-            },
-
-            OnChallenge = context =>
-            {
-                context.HandleResponse(); // Evitar el manejo predeterminado
-                context.Response.ContentType = "application/json";
-                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-
-                var response = new { Message = "No autorizado. Token invalido o expirado." };
-                var jsonResponse = JsonSerializer.Serialize(response);
-                return context.Response.WriteAsync(jsonResponse);
-            },
-        };
-    });
-
-
-builder.Services.AddAuthorization();
+            return Task.CompletedTask;
+        },
+    };
+});
 
 // iniciacion de servicios externos
 builder.Services.AddScoped<Context>();
@@ -152,50 +153,64 @@ builder.Services.AddOpenApi(options =>
     });
 });
 
+builder.Services.AddAuthorization();
+
+// Agrega policía cors 
+var allowedOrigins = new[] {
+    // "http://localhost:4200",
+    "https://localhost:4200",
+    "https://register.local:4200",
+    "https://8x8d4rkv-4200.use2.devtunnels.ms",
+    "https://8x8d4rkv-5272.use2.devtunnels.ms",
+    "https://blog-notas-front.vercel.app", // produccion en vercel
+    "http://172.19.0.2:4200",
+    "http://localhost:3000",
+};
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAngular",
-        policy =>
-        {
-            policy.WithOrigins("http://localhost:4200")
-                .AllowCredentials()
-                .AllowAnyHeader()
-                .AllowAnyMethod();
-        });
+    options.AddPolicy("AllowFronts", policy =>
+    {
+        policy
+            .WithOrigins(allowedOrigins) // aquí va tu dominio real
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials()
+            .SetIsOriginAllowedToAllowWildcardSubdomains();;
+    });
 });
 
 var app = builder.Build();
 
-app.UseCors("AllowAngular");
-
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+// if (app.Environment.IsDevelopment())
+// {
+
+app.MapOpenApi();
+app.MapScalarApiReference(options =>
 {
+    options.WithTitle("Register-Api")
+       .WithClassicLayout()
+       .ForceDarkMode()
+       .HideSearch()
+       .ShowOperationId()
+       .ExpandAllTags()
+       .SortTagsAlphabetically()
+       .SortOperationsByMethod()
+       .AddPreferredSecuritySchemes("BearerAuth")
+       .PreserveSchemaPropertyOrder();
+    //    .WithProxy("https://api-gateway.company.com")
+    //    .AddServer("https://api.company.com", "Production")
+    //    .AddServer("https://staging-api.company.com", "Staging");
+});
 
-    app.MapOpenApi();
-    app.MapScalarApiReference(options =>
-    {
-        options.WithTitle("Register-Api")
-           .WithClassicLayout()
-           .ForceDarkMode()
-           .HideSearch()
-           .ShowOperationId()
-           .ExpandAllTags()
-           .SortTagsAlphabetically()
-           .SortOperationsByMethod()
-           .AddPreferredSecuritySchemes("BearerAuth")
-           .PreserveSchemaPropertyOrder();
-        //    .WithProxy("https://api-gateway.company.com")
-        //    .AddServer("https://api.company.com", "Production")
-        //    .AddServer("https://staging-api.company.com", "Staging");
-    });
-
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+app.UseSwagger();
+app.UseSwaggerUI();
+// }
 
 app.UseHttpsRedirection();
+
+app.UseCors("AllowFronts");
 
 app.UseAuthentication();
 
