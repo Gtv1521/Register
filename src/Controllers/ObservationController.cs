@@ -39,7 +39,7 @@ namespace FrameworkDriver_Api.src.Controllers
                 if (observation != null)
                 {
                     var clientId = await _observationService.CreateObservationAsync(observation);
-                    return CreatedAtAction(nameof(GetClientById), new { id = clientId }, clientId);
+                    return CreatedAtAction(nameof(GetClientById), new { id = clientId }, new { id = clientId });
                 }
                 return BadRequest("Client data is null");
             }

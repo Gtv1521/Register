@@ -17,7 +17,7 @@ using MongoDB.Driver;
 
 namespace FrameworkDriver_Api.src.Repositories
 {
-    public class RegisterRepository : IRegisters<RegisterModel, ListRegistersProjection, RegisterObsCliProjection>
+    public class RegisterRepository : IRegisters<RegisterModel, ListRegistersProjection, RegisterObsCliProjection>, IUpdateQr
     {
         private readonly IMongoCollection<RegisterModel> _register;
         private readonly IMongoCollection<ClientModel> _client;
@@ -31,9 +31,9 @@ namespace FrameworkDriver_Api.src.Repositories
             _logger = logger;
         }
 
-        public Task<string> CreateAsync(RegisterModel item)
+        public async Task<string> CreateAsync(RegisterModel item)
         {
-            return _register.InsertOneAsync(item).ContinueWith(task => item.Id);
+            return await _register.InsertOneAsync(item).ContinueWith(task => item.Id);
         }
 
         public async Task<bool> DeleteAsync(string id)
@@ -64,7 +64,7 @@ namespace FrameworkDriver_Api.src.Repositories
 
             var pipeline = _register.Aggregate()
             .As<BsonDocument>()
-        
+
             // 🔹 Lookup observación
             .AppendStage<BsonDocument>(new BsonDocument("$lookup", new BsonDocument
             {
@@ -80,13 +80,13 @@ namespace FrameworkDriver_Api.src.Repositories
                 },
                 { "as", "Observation" }   // 👈 coincide con tu propiedad
             }))
-        
+
             .AppendStage<BsonDocument>(new BsonDocument("$unwind", new BsonDocument
             {
                 { "path", "$Observation" },
                 { "preserveNullAndEmptyArrays", true }
             }))
-        
+
             // 🔹 Lookup cliente
             .AppendStage<BsonDocument>(new BsonDocument("$lookup", new BsonDocument
             {
@@ -95,7 +95,7 @@ namespace FrameworkDriver_Api.src.Repositories
                 { "foreignField", "_id" },
                 { "as", "Clients" }   // 👈 coincide con la propiedad
             }))
-        
+
             .AppendStage<BsonDocument>(new BsonDocument("$unwind", new BsonDocument
             {
                 { "path", "$Clients" },   // 👈 ahora sí correcto
@@ -108,6 +108,7 @@ namespace FrameworkDriver_Api.src.Repositories
 
             var result = bsonResult
                 .Select(doc => BsonSerializer.Deserialize<RegisterObsCliProjection>(doc))
+                .OrderByDescending(x => x.CreatedAt)
                 .ToList();
             return result;
         }
@@ -122,6 +123,15 @@ namespace FrameworkDriver_Api.src.Repositories
         {
             return await _register.ReplaceOneAsync(register => register.Id == id, item)
                 .ContinueWith(task => task.Result.ModifiedCount > 0);
+        }
+
+        public async Task<bool> UpdateQr(string urlImage, string idImage, string idInsert)
+        {
+            var filter = Builders<RegisterModel>.Filter.Eq(x => x.Id, idInsert);
+            var update = Builders<RegisterModel>.Update.Set(x => x.IdQr, idImage).Set(x => x.UrlQr, urlImage);
+
+            var result = await _register.UpdateOneAsync(filter, update);
+            return result.ModifiedCount > 0;
         }
     }
 }

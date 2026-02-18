@@ -30,8 +30,9 @@ namespace FrameworkDriver_Api.src.Controllers
         [HttpPost]
         public async Task<IActionResult> AddRegister([FromBody] RegisterDTO register)
         {
+            if(!ModelState.IsValid) return BadRequest(ModelState);
             var result = await _registerService.AddRegisterAsync(register);
-            return Ok(result);
+            return CreatedAtAction(nameof(GetRegisterById), new { id = result }, new { id = result });
         }
 
         [HttpGet]

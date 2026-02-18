@@ -86,7 +86,7 @@ namespace FrameworkDriver_Api.src.Repositories
                 Builders<SessionModel>.Filter.Eq(fl => fl.Token, token),
                 Builders<SessionModel>.Filter.Eq(user => user.UserId, id));
 
-            var busca = await _sessionCollection.FindAsync(filter).Result.FirstOrDefaultAsync();
+            var busca = await _sessionCollection.Find(filter).FirstOrDefaultAsync();
             if (busca == null) return false;
             var update = Builders<SessionModel>.Update.Set(task => task.Token, tokenNew);
             return await _sessionCollection.UpdateOneAsync(filter, update).ContinueWith(task => task.Result.ModifiedCount > 0);

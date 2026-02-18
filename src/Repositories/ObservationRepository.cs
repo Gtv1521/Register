@@ -42,6 +42,7 @@ namespace FrameworkDriver_Api.src.Repositories
         {
             return await _observations
             .Find(x => x.IdRegister == id)
+            .SortByDescending(x => x.CreatedAt)
             .Skip((pageNumber - 1) * pageSize)
             .Limit(pageSize)
             .ToListAsync();

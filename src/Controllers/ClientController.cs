@@ -32,7 +32,7 @@ namespace FrameworkDriver_Api.src.Controllers
             {
                 var clientId = await _clientService.CreateClientAsync(client);
                 if (client == null) return BadRequest("Client data is null");
-                return CreatedAtAction(nameof(GetClientById), new { id = clientId }, clientId);
+                return CreatedAtAction(nameof(GetClientById), new { id = clientId }, new { id = clientId });
 
             }
             catch (System.Exception ex)

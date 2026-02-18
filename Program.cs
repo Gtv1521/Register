@@ -120,6 +120,7 @@ builder.Services.AddScoped<IRegisters<RegisterModel, ListRegistersProjection, Re
 builder.Services.AddScoped<ILoadAllId<ObservationModel>, ObservationRepository>();
 builder.Services.AddScoped<ISession<SessionModel>, SessionRepository>();
 builder.Services.AddScoped<QrInterface, QrService>();
+builder.Services.AddScoped<IUpdateQr, RegisterRepository>();
 //add utils
 builder.Services.AddScoped<FileUpload>();
 

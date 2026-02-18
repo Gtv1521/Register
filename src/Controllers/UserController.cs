@@ -98,7 +98,13 @@ namespace FrameworkDriver_Api.src.Controllers
         {
             var user = await _userService.GetUserByIdAsync(id);
             if (user == null) return NotFound("User not found");
-            return Ok(user);
+            return Ok(new
+            {
+                id = user.Id,
+                name = user.Name,
+                email = user.Email,
+                rol = user.Rol
+            });
         }
 
         /// <summary>

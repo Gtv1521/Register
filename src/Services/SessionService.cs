@@ -48,7 +48,7 @@ namespace FrameworkDriver_Api.src.Services
 
             var sessions = await _sessionRepository.CountAsync(user.Id);
             if (sessions >= 3)
-                throw new MaxConnectionException("Máximas conexiones activas alcanzadas (3)");
+                throw new MaxConnectionException("Máximas conexiones activas alcanzadas (3)", user.Id);
 
 
 
@@ -65,10 +65,9 @@ namespace FrameworkDriver_Api.src.Services
                 };
 
                 // Aqui deberia guardarse la sesion en la base de datos
-                return await _sessionRepository.LogIn(session).ContinueWith(task =>
-                {
-                    return (task.Result, AccesToken);
-                });
+                var response = await _sessionRepository.LogIn(session);
+
+                return (response, AccesToken);
             }
             else
             {
