@@ -49,6 +49,7 @@ namespace FrameworkDriver_Api.src.Controllers
                 throw;
             }
         }
+        
         [HttpGet("{id}")]
         public async Task<IActionResult> GetClientById(string id)
         {

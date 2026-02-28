@@ -7,7 +7,6 @@ namespace FrameworkDriver_Api.src.Interfaces
 {
     public interface ISession<T>
     {
-
         Task<T> SignIn(T user); // crea un usuario 
         Task<T> LogIn(T item); // inicia sesion
         Task<IEnumerable<T>> OpenSessions(string IdUser); // muestra los datos las sessiones abiertas

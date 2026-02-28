@@ -26,11 +26,14 @@ namespace FrameworkDriver_Api.src.Services
 
         public async Task<string> AddRegisterAsync(RegisterDTO register)
         {
+            var nextRegistroNumber = await _registerRepository.GetNextRegistroNumberAsync();
             var result = await _registerRepository.CreateAsync(new RegisterModel
             {
                 IdClient = register.IdClient,
+                IdCompany = register.IdCompany,
                 IdUser = register.IdUser,
                 StatusRegister = register.StatusRegister,
+                RegistroNumber = nextRegistroNumber,
                 CreatedAt = DateTime.UtcNow, // Guardar en UTC
             });
 
@@ -57,9 +60,9 @@ namespace FrameworkDriver_Api.src.Services
             return await _registerRepository.FilterData(filter);
         }
 
-        public async Task<IEnumerable<RegisterObsCliProjection>> GetAllRegistersAsync(int pageNumber, int pageSize)
+        public async Task<IEnumerable<RegisterObsCliProjection>> GetAllRegistersAsync(int pageNumber, int pageSize, string? idCompany = null)
         {
-            return await _registerRepository.GetAllAsync(pageNumber, pageSize);
+            return await _registerRepository.GetAllAsync(pageNumber, pageSize, idCompany);
         }
 
         public async Task<RegisterModel> GetRegisterByIdAsync(string id)

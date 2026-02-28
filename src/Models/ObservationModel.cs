@@ -32,10 +32,8 @@ namespace FrameworkDriver_Api.Models
     {
         [Display(Name = "Informacion")]
         Informacion,
-        [Display(Name = "Peligro")]
-        Peligro,
-        [Display(Name = "Error")]
-        Error,
+        [Display(Name = "Cancelado")]
+        Cancelado,
         [Display(Name = "Solucion")]
         Solucion
     }

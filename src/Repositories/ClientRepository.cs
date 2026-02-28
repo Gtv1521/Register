@@ -39,7 +39,7 @@ namespace FrameworkDriver_Api.src.Repositories
             return await _clients.Find(filter).ToListAsync();
         }
 
-        public async Task<IEnumerable<ClientModel>> GetAllAsync(int pageNumber, int pageSize)
+        public async Task<IEnumerable<ClientModel>> GetAllAsync(int pageNumber, int pageSize, string? idCompany = null)
         {
             return await _clients.Find(_ => true)
             .Skip((pageNumber - 1) * pageSize)

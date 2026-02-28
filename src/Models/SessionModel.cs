@@ -15,6 +15,8 @@ namespace FrameworkDriver_Api.src.Models
         public string Id { get; set; } = string.Empty;
         [BsonRepresentation(BsonType.ObjectId)]
         public string UserId { get; set; } = string.Empty;
+        [BsonRepresentation(BsonType.ObjectId)]
+        public string IdCompany { get; set; } = string.Empty;
         public DateTime StartTime { get; set; }
         public DateTime EndTime { get; set; }
         public string Status { get; set; } = string.Empty;

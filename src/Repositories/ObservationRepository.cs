@@ -29,7 +29,7 @@ namespace FrameworkDriver_Api.src.Repositories
                 .ContinueWith(task => task.Result.DeletedCount > 0);
         }
 
-        public async Task<IEnumerable<ObservationModel>> GetAllAsync(int pageNumber, int pageSize)
+        public async Task<IEnumerable<ObservationModel>> GetAllAsync(int pageNumber, int pageSize, string? idCompany = null)
         {
             return await _observations.Find(_ => true)
             .Skip((pageNumber - 1) * pageSize)

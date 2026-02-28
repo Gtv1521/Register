@@ -37,9 +37,10 @@ namespace FrameworkDriver_Api.src.Controllers
 
         [HttpGet]
         [AllowAnonymous] // entrada a anonima
-        public async Task<IActionResult> GetAllRegisters([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+        public async Task<IActionResult> GetAllRegisters([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10, [FromQuery] string? idCompany = null)
         {
-            var result = await _registerService.GetAllRegistersAsync(pageNumber, pageSize);
+            if(idCompany == null) return BadRequest("El idCompany es requerido");
+            var result = await _registerService.GetAllRegistersAsync(pageNumber, pageSize, idCompany);
             return Ok(result);
         }
 

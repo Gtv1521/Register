@@ -22,6 +22,7 @@ namespace FrameworkDriver_Api.src.Repositories
         private readonly IMongoCollection<RegisterModel> _register;
         private readonly IMongoCollection<ClientModel> _client;
         private readonly IMongoCollection<ObservationModel> _observation;
+        private static readonly Random _random = new Random();
         private ILogger<RegisterRepository> _logger;
         public RegisterRepository(Context context, ILogger<RegisterRepository> logger)
         {
@@ -29,6 +30,39 @@ namespace FrameworkDriver_Api.src.Repositories
             _client = context.GetCollection<ClientModel>("Clients");
             _observation = context.GetCollection<ObservationModel>("Observations");
             _logger = logger;
+
+            // Migrar registros existentes
+            MigrateRegistroNumberAsync().ConfigureAwait(false);
+        }
+
+        private async Task MigrateRegistroNumberAsync()
+        {
+            try
+            {
+                // Buscar registros con RegistroNumber vacío o nulo
+                var registrosToMigrate = await _register
+                    .Find(x => x.RegistroNumber == null || x.RegistroNumber == string.Empty)
+                    .ToListAsync();
+
+                if (registrosToMigrate.Count > 0)
+                {
+                    foreach (var registro in registrosToMigrate)
+                    {
+                        var counter = await _register.CountDocumentsAsync(_ => true) + 1;
+                        var newRegistroNumber = $"REG-{counter:D6}";
+
+                        var filter = Builders<RegisterModel>.Filter.Eq(x => x.Id, registro.Id);
+                        var update = Builders<RegisterModel>.Update.Set(x => x.RegistroNumber, newRegistroNumber);
+
+                        await _register.UpdateOneAsync(filter, update);
+                    }
+                    _logger.LogInformation("Migración de RegistroNumber completada");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error en migración de RegistroNumber: {ex.Message}");
+            }
         }
 
         public async Task<string> CreateAsync(RegisterModel item)
@@ -58,13 +92,20 @@ namespace FrameworkDriver_Api.src.Repositories
                 .ToListAsync();
         }
 
-        public async Task<IEnumerable<RegisterObsCliProjection>> GetAllAsync(int pageNumber, int pageSize)
+        public async Task<IEnumerable<RegisterObsCliProjection>> GetAllAsync(int pageNumber, int pageSize, string? idCompany = null)
         {
             var skip = (pageNumber - 1) * pageSize;
 
-            var pipeline = _register.Aggregate()
-            .As<BsonDocument>()
+            if (idCompany == null) throw new Exception("El id de compañia no debe ser nulo");
 
+            var pipeline = _register.Aggregate()
+            .As<BsonDocument>();
+
+            // 🔹 Filtrar por idCompany si se proporciona
+            pipeline = pipeline.AppendStage<BsonDocument>(new BsonDocument("$match", new BsonDocument("IdCompany", new ObjectId(idCompany))));
+            // ordena del ultimo al primero 
+            pipeline = pipeline.AppendStage<BsonDocument>(new BsonDocument("$sort", new BsonDocument("CreatedAt", -1)));
+            pipeline = pipeline
             // 🔹 Lookup observación
             .AppendStage<BsonDocument>(new BsonDocument("$lookup", new BsonDocument
             {
@@ -132,6 +173,48 @@ namespace FrameworkDriver_Api.src.Repositories
 
             var result = await _register.UpdateOneAsync(filter, update);
             return result.ModifiedCount > 0;
+        }
+
+        public async Task<string> GetNextRegistroNumberAsync()
+        {
+            var now = DateTime.Now;
+
+            // 2. Formatear Año (últimos 2 dígitos) y Mes (con cero a la izquierda)
+            // "yyMM" resultará en "2602" para febrero de 2026
+            string datePart = now.ToString("yyMMdd");
+
+            // 3. Generar un string aleatorio de 4 caracteres (Alfanumérico)
+            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            char[] stringChars = new char[4];
+
+            for (int i = 0; i < stringChars.Length; i++)
+            {
+                stringChars[i] = chars[_random.Next(chars.Length)];
+            }
+
+            string randomPart = new string(stringChars);
+
+            // 4. Unir todo con el prefijo
+            return $"REG{datePart}-{randomPart}";
+        }
+
+        public async Task<string> GenerateUniqueIdAsync()
+        {
+            string newId;
+            bool exists;
+
+            do
+            {
+                // 1. Generamos el ID
+                newId = await GetNextRegistroNumberAsync();
+
+                // 2. Verificamos en la DB si ya existe
+                // Supongamos que usas Entity Framework o MongoDB Driver
+                exists = await _register.Find(r => r.RegistroNumber == newId).AnyAsync();
+
+            } while (exists); // Si existe, el bucle repite y genera otro
+
+            return newId;
         }
     }
 }

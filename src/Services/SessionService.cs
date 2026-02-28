@@ -66,6 +66,7 @@ namespace FrameworkDriver_Api.src.Services
 
                 // Aqui deberia guardarse la sesion en la base de datos
                 var response = await _sessionRepository.LogIn(session);
+                response.IdCompany = user.IdCompany;
 
                 return (response, AccesToken);
             }
@@ -95,6 +96,7 @@ namespace FrameworkDriver_Api.src.Services
                 Name = user.Name,
                 Email = user.Email,
                 Password = hash,
+                IdCompany = user.IdCompany,
                 Rol = user.Rol
             });
 
@@ -102,19 +104,19 @@ namespace FrameworkDriver_Api.src.Services
             var tokenRefresh = await _tokenService.GenerateRefreshToken(response);
             var AccesToken = await _tokenService.GenerateToken(user, 1); // Token valido por 1 hora
 
-            await _email.EnviarEmailAsync(
-                    user.Email,
-                    "Bienvenido a nuestro servicio",
-                    $@"<h1>{user.Name}</h1>
-                    <br>
-                    <article>
-                    Hola, Bienvenido !!! <br>
-                    Este es el medio de comunicacion con el cliente donde se le
-                    notifica novedades de lo que pasa con el servio que se le brinda.
-                    </article>
-                    <article>
-                    Las funciones que hay son para facilitar tu vida...
-                    </article>"
+            var emailTask = _email.EnviarEmailAsync(
+                user.Email,
+                "Bienvenido a nuestro servicio",
+                $@"<h1>{user.Name}</h1>
+                <br>
+                <article>
+                Hola, Bienvenido !!! <br>
+                Este es el medio de comunicacion con el cliente donde se le
+                notifica novedades de lo que pasa con el servio que se le brinda.
+                </article>
+                <article>
+                Las funciones que hay son para facilitar tu vida...
+                </article>"
             );
             //  se crea la sesion en db
             return await _sessionRepository.SignIn(new SessionModel
@@ -134,8 +136,9 @@ namespace FrameworkDriver_Api.src.Services
                 {
                     Id = task.Result.Id,
                     UserId = task.Result.UserId,
+                    IdCompany = user.IdCompany,
                     Token = tokenRefresh
-                }, AccesToken);
+                }, AccesToken );
             });
         }
 

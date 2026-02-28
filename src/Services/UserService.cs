@@ -23,6 +23,7 @@ namespace FrameworkDriver_Api.src.Services
                 Name = user.Name, 
                 Email = user.Email, 
                 Password = user.Password,
+                IdCompany = user.IdCompany,
                 Rol = user.Rol
             });
         }

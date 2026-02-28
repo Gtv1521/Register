@@ -12,7 +12,7 @@ namespace FrameworkDriver_Api.src.Interfaces
     }
     public interface IReadAll<T>
     {
-        Task<IEnumerable<T>> GetAllAsync(int pageNumber, int pageSize);
+        Task<IEnumerable<T>> GetAllAsync(int pageNumber, int pageSize, string? idCompany = null);
     }
     public interface IReadAllId<T>
     {
@@ -63,7 +63,7 @@ namespace FrameworkDriver_Api.src.Interfaces
 
     public interface IRegisters<T, P, R> : IReadOne<T>, IReadAll<R>, IFilter<P>, ICreate<T>, IUpdate<T>, IDelete
     {
-        
+        Task<string> GetNextRegistroNumberAsync();
     }
 
     public interface ILoadAllId<T> : ICrud<T>, IReadAllId<T>

@@ -6,6 +6,8 @@ using FrameworkDriver_Api.src.Exceptions;
 using FrameworkDriver_Api.src.Interfaces;
 using FrameworkDriver_Api.src.Models;
 using FrameworkDriver_Api.Utils;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.VisualBasic;
 using MongoDB.Driver;
 using ZstdSharp.Unsafe;
@@ -24,7 +26,7 @@ namespace FrameworkDriver_Api.src.Repositories
         {
             if (!GetMailAsync(item.Email).Result.Item1)
             {
-                 return await _users.InsertOneAsync(item).ContinueWith(task => item.Id);
+                return await _users.InsertOneAsync(item).ContinueWith(task => item.Id);
             }
             else
             {
@@ -38,7 +40,7 @@ namespace FrameworkDriver_Api.src.Repositories
                 .ContinueWith(task => task.Result.DeletedCount > 0);
         }
 
-        public async Task<IEnumerable<UserModel>> GetAllAsync(int pageNumber, int pageSize)
+        public async Task<IEnumerable<UserModel>> GetAllAsync(int pageNumber, int pageSize, string? idCompany = null)
         {
             return await _users.Find(_ => true)
             .Skip((pageNumber - 1) * pageSize)
@@ -84,15 +86,5 @@ namespace FrameworkDriver_Api.src.Repositories
                 return (user != null, user);
             });
         }
-
-        // private async Task<(bool status, UserModel? objecto)> UniquePinAsync(int pin)
-        // {
-        //     return await _users.Find(u => u.pin == pin).FirstOrDefaultAsync()
-        //     .ContinueWith(task =>
-        //     {
-        //         var user = task.Result; 
-        //         return (user == null, user); // si es null el pin no existe
-        //     });
-        // }
     }
 }

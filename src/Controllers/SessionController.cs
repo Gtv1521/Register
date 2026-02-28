@@ -78,6 +78,7 @@ namespace FrameworkDriver_Api.src.Controllers
                 {
                     idUser = data.UserId,
                     idSession = data.Id,
+                    idCompany = data.IdCompany,
                     accessToken = token,
                     refreshToken = data.Token,
                 });
@@ -163,9 +164,10 @@ namespace FrameworkDriver_Api.src.Controllers
         }
 
         [HttpPost("signin")]
+        [Consumes("application/json", "multipart/form-data")]
         public async Task<IActionResult> SignIn([FromBody] UserDto user)
         {
-            if (!ModelState.IsValid) return BadRequest(ModelState.Values);
+            if (!ModelState.IsValid) return BadRequest(ModelState.Values.SelectMany(v => v.Errors));
             try
             {
                 (var data, var token) = await _sessionService.SignIn(new UserModel
@@ -173,11 +175,12 @@ namespace FrameworkDriver_Api.src.Controllers
                     Name = user.Name,
                     Email = user.Email,
                     Password = user.Password,
+                    IdCompany = user.IdCompany,
                     Rol = user.Rol
                 });
 
                 // Access Token (corto plazo - 15-60 minutos)
-                Response.Cookies.Append("access_token", data.Token, new CookieOptions
+                Response.Cookies.Append("access_token", token, new CookieOptions
                 {
                     HttpOnly = true,
                     Secure = true,
@@ -189,7 +192,7 @@ namespace FrameworkDriver_Api.src.Controllers
                 });
 
                 // Refresh Token (largo plazo - almacenado en DB)
-                Response.Cookies.Append("refresh_token", token, new CookieOptions
+                Response.Cookies.Append("refresh_token", data.Token, new CookieOptions
                 {
                     HttpOnly = true,
                     Secure = true,
@@ -209,6 +212,7 @@ namespace FrameworkDriver_Api.src.Controllers
                 {
                     idUser = data.UserId,
                     idSession = data.Id,
+                    idCompany = data.IdCompany,
                     accessToken = token,
                     refreshToken = data.Token,
                 });
@@ -228,7 +232,7 @@ namespace FrameworkDriver_Api.src.Controllers
                 _logger.LogWarning(uEx.Message, "User creation failed during sign-in");
                 return BadRequest(uEx.Message);
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 _logger.LogError(ex.Message, "Error during sign-in");
                 return StatusCode(500, "Internal server error");
@@ -356,6 +360,22 @@ namespace FrameworkDriver_Api.src.Controllers
             }
         }
 
+
+        [HttpGet("verifyEmail/{email}")]
+        public async Task<IActionResult> VerifyEmail(string email)
+        {
+            if (string.IsNullOrEmpty(email)) return BadRequest(ModelState.Values.SelectMany(v => v.Errors));
+            try
+            {
+                var result = await _sessionService.ValidEmail(email);
+                return Ok(result);
+            }
+            catch (System.Exception ex)
+            {
+                _logger.LogError(ex, "Error during email verification");
+                return StatusCode(500, "Internal server error");
+            }
+        }
         private void ClearInvalidCookies()
         {
             var cookieOptions = new CookieOptions

@@ -108,6 +108,7 @@ builder.Services.AddScoped<RegisterService>();
 builder.Services.AddScoped<ObservationService>();
 builder.Services.AddScoped<SessionService>();
 builder.Services.AddScoped<EmailService>();
+builder.Services.AddScoped<CompanyService>();
 
 builder.Services.AddScoped<IHashPass<UserDto>, HashPassword>();
 //  add services for repositories
@@ -115,6 +116,7 @@ builder.Services.AddScoped<IToken<UserModel>, Token>();
 
 // add repositories
 builder.Services.AddScoped<IAddFilter<ClientModel, ClientModel>, ClientRepository>();
+builder.Services.AddScoped<IAddFilter<CompanyModel, CompanyModel>, CompanyRepository>();
 builder.Services.AddScoped<ICrudWithLoad<UserModel>, UserRepository>();
 builder.Services.AddScoped<IRegisters<RegisterModel, ListRegistersProjection, RegisterObsCliProjection>, RegisterRepository>();
 builder.Services.AddScoped<ILoadAllId<ObservationModel>, ObservationRepository>();

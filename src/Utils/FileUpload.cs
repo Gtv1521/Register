@@ -11,15 +11,8 @@ namespace FrameworkDriver_Api.src.Utils
 
         public FileUpload(IOptions<CloudinaryModel> settings)
         {
-            try
-            {
-                _cloudinary = new Cloudinary(settings.Value.Url);
-                _cloudinary.Api.Secure = true;
-            }
-            catch (Exception ex)
-            {
-                throw new ApplicationException($"Failed connecting to Cloudinary: {ex.Message}");
-            }
+            _cloudinary = new Cloudinary(settings.Value.Url);
+            _cloudinary.Api.Secure = true;
         }
 
         /// <summary>
@@ -27,48 +20,70 @@ namespace FrameworkDriver_Api.src.Utils
         /// </summary>
         public async Task<(string? Url, string? PublicId)> UploadMedia(IFormFile file, string folder)
         {
-            if (file == null || file.Length == 0)
-                return (null, null);
+            // if (file == null || file.Length == 0)
+            //     throw new Exception("no se esta pasando un archivo");
 
-            UploadResult uploadResult;
+            // UploadResult uploadResult;
 
-            // si es un video se sube mediante esta parte
-            if (file.ContentType.StartsWith("video/"))
-            {
-                var videoParams = new VideoUploadParams
-                {
-                    File = new FileDescription(file.FileName, file.OpenReadStream()),
-                    Folder = folder,
-                    UseFilename = true,
-                    UniqueFilename = false,
-                    Overwrite = true
-                };
+            // // si es un video se sube mediante esta parte
+            // if (file.ContentType.StartsWith("video/"))
+            // {
+            //     var videoParams = new VideoUploadParams
+            //     {
+            //         File = new FileDescription(file.FileName, file.OpenReadStream()),
+            //         Folder = $"DataPqr/{folder}",
+            //         UseFilename = true,
+            //         UniqueFilename = false,
+            //         Overwrite = true
+            //     };
 
-                uploadResult = await _cloudinary.UploadAsync(videoParams);
-            }
-            // si es una imagen se sube aqui
-            else if (file.ContentType.StartsWith("image/"))
-            {
-                var imageParams = new ImageUploadParams
-                {
-                    File = new FileDescription(file.FileName, file.OpenReadStream()),
-                    Folder = folder,
-                    UseFilename = true,
-                    UniqueFilename = false,
-                    Overwrite = true
-                };
+            //     uploadResult = await _cloudinary.UploadAsync(videoParams);
+            // }
+            // // si es una imagen se sube aqui
+            // else if (file.ContentType.StartsWith("image/"))
+            // {
+            //     var imageParams = new ImageUploadParams
+            //     {
+            //         File = new FileDescription(file.FileName, file.OpenReadStream()),
+            //         Folder = $"DataPqr/{folder}",
+            //         UseFilename = true,
+            //         UniqueFilename = false,
+            //         Overwrite = true
+            //     };
 
-                uploadResult = await _cloudinary.UploadAsync(imageParams);
-            }
-            else
-            {
-                throw new ApplicationException("Only images and videos are allowed");
-            }
+            //     uploadResult = await _cloudinary.UploadAsync(imageParams);
+            // }
+            // else
+            // {
+            //     throw new ApplicationException("Only images and videos are allowed");
+            // }
 
-            return (
-                uploadResult.SecureUrl?.ToString(),
-                uploadResult.PublicId
-            );
+            // return (
+            //     uploadResult.SecureUrl?.ToString(),
+            //     uploadResult.PublicId
+            // );
+
+            if (file == null || file.Length == 0) throw new Exception("Archivo vacío");
+
+            // Determinamos si es video o imagen de forma más limpia
+            bool isVideo = file.ContentType.StartsWith("video/");
+            bool isImage = file.ContentType.StartsWith("image/");
+
+            if (!isVideo && !isImage) throw new ApplicationException("Formato no permitido");
+
+            // Comparten la misma base de parámetros
+            var uploadParams = isVideo ? (RawUploadParams)new VideoUploadParams() : new ImageUploadParams();
+
+            uploadParams.File = new FileDescription(file.FileName, file.OpenReadStream());
+            uploadParams.Folder = $"DataPqr/{folder}";
+            uploadParams.UseFilename = true;
+            uploadParams.UniqueFilename = false;
+            uploadParams.Overwrite = true;
+
+            // Cloudinary detecta automáticamente el tipo si usas el método genérico o el específico
+            var uploadResult = await _cloudinary.UploadAsync(uploadParams);
+
+            return (uploadResult.SecureUrl?.ToString(), uploadResult.PublicId);
         }
 
 
