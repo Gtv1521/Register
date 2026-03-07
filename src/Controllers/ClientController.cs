@@ -14,7 +14,7 @@ namespace FrameworkDriver_Api.src.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    // [Authorize]
+    [Authorize]
     public class ClientController : ControllerBase
     {
         public readonly ClientService _clientService;
@@ -38,7 +38,6 @@ namespace FrameworkDriver_Api.src.Controllers
             catch (System.Exception ex)
             {
                 return BadRequest(ex.Message);
-                throw;
             }
         }
 

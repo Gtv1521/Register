@@ -31,9 +31,9 @@ namespace FrameworkDriver_Api.src.Services
         {
             return await _user.GetByIdAsync(id);
         }
-        public async Task<IEnumerable<UserModel>> GetAllUsersAsync(int pageNumber, int pageSize)
+        public async Task<IEnumerable<UserModel>> GetAllUsersAsync(string company, int pageNumber, int pageSize)
         {
-            return await _user.GetAllAsync(pageNumber, pageSize);
+            return await _user.GetAllAsync(pageNumber, pageSize, company);
         }
 
         public async Task<bool> UpdateUserAsync(string id, UserDto user)

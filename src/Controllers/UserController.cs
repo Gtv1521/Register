@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using FrameworkDriver_Api.src.Dto;
 using FrameworkDriver_Api.src.Models;
@@ -81,7 +82,6 @@ namespace FrameworkDriver_Api.src.Controllers
         /// <summary>
         /// Obtiene un usuario por el id
         /// </summary>
-        /// <param name="id">Entra el id de usuario</param>
         /// <returns>Trae las datos de usuario registrado</returns>
         /// <response code="200">Operación exitosa. Devuelve el recurso actualizado o creado.</response>
         /// <response code="201">Recurso creado exitosamente.</response>
@@ -90,26 +90,32 @@ namespace FrameworkDriver_Api.src.Controllers
         /// <response code="403">Acceso denegado. El usuario no tiene permisos para esta acción.</response>
         /// <response code="404">No encontrado. El recurso solicitado no existe.</response>
         /// <response code="500">Error interno del servidor.</response>
-        [HttpGet("{id}")]
+        [HttpGet("me")]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<UserModel>))]
         [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(string))]
         [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ProblemDetails))]
-        public async Task<IActionResult> GetUserById(string id)
+        public async Task<IActionResult> GetUserById()
         {
-            var user = await _userService.GetUserByIdAsync(id);
-            if (user == null) return NotFound("User not found");
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var email = User.FindFirst(ClaimTypes.Email)?.Value;
+            var username = User.FindFirst(ClaimTypes.Name)?.Value;
+            var company = await _userService.GetUserByIdAsync(userId!);
+            var rol = User.FindFirst(ClaimTypes.Role)?.Value;
+
             return Ok(new
             {
-                id = user.Id,
-                name = user.Name,
-                email = user.Email,
-                rol = user.Rol
+                id = userId,
+                email,
+                name = username,
+                rol,
+                idCompany = company.IdCompany,
             });
         }
 
         /// <summary>
         /// Optiiene varios usuarios, se pasa 
         /// </summary>
+        /// <param name="idCompany">El ID de la compañía (Este es el que te falta)</param>
         /// <param name="pageNumber">Numero de pagina</param>
         /// <param name="pageSize">Cantidad de usuarios a traer</param>
         /// <returns>Trae los usuario creados en el segmanto que se solicita.</returns>
@@ -121,11 +127,13 @@ namespace FrameworkDriver_Api.src.Controllers
         /// <response code="404">No encontrado. El recurso solicitado no existe.</response>
         /// <response code="500">Error interno del servidor.</response>
         [HttpGet]
+        [Authorize(Roles = "Administrador, Super")]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<UserModel>))]
         [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(string))]
-        public async Task<IActionResult> GetAllUsers(int pageNumber = 1, int pageSize = 10)
+        public async Task<IActionResult> GetAllUsers(string idCompany, int pageNumber = 1, int pageSize = 10)
         {
-            var users = await _userService.GetAllUsersAsync(pageNumber, pageSize);
+            if (string.IsNullOrEmpty(idCompany)) return BadRequest("El id de la empresa es necesario");
+            var users = await _userService.GetAllUsersAsync(idCompany, pageNumber, pageSize);
             if (users == null || !users.Any()) return NotFound("No users found");
             return Ok(users);
         }

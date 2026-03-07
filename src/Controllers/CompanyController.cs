@@ -12,7 +12,6 @@ namespace FrameworkDriver_Api.src.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    // [Authorize]
     public class CompanyController : ControllerBase
     {
         private readonly CompanyService _companyService;
@@ -41,6 +40,7 @@ namespace FrameworkDriver_Api.src.Controllers
         }
 
         [HttpGet("{id}")]
+        [Authorize]
         public async Task<IActionResult> GetCompanyById(string id)
         {
             if (id == null) return BadRequest("id no puede ser nulo");
@@ -50,6 +50,7 @@ namespace FrameworkDriver_Api.src.Controllers
         }
 
         [HttpGet("filter/{email}")]
+        [Authorize]
         public async Task<IActionResult> BuscarCompany(string email)
         {
             if (email == null) return BadRequest("Envia un dato para buscar");
@@ -66,6 +67,7 @@ namespace FrameworkDriver_Api.src.Controllers
         }
 
         [HttpGet]
+        [Authorize(Roles = "Super")]
         public async Task<IActionResult> GetAllCompanies([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
         {
             try
@@ -81,6 +83,7 @@ namespace FrameworkDriver_Api.src.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize(Roles = "Administrador, Super")]
         public async Task<IActionResult> UpdateCompany(string id, [FromBody] CompanyModel company)
         {
             if (id == null) return BadRequest("id no puede ser nulo");
@@ -98,6 +101,7 @@ namespace FrameworkDriver_Api.src.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Super")]
         public async Task<IActionResult> DeleteCompany(string id)
         {
             if (id == null) return BadRequest("id no puede ser nulo");

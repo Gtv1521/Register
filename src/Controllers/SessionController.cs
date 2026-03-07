@@ -79,8 +79,6 @@ namespace FrameworkDriver_Api.src.Controllers
                     idUser = data.UserId,
                     idSession = data.Id,
                     idCompany = data.IdCompany,
-                    accessToken = token,
-                    refreshToken = data.Token,
                 });
             }
             catch (UnauthorizedAccessException uaEx)
@@ -109,6 +107,7 @@ namespace FrameworkDriver_Api.src.Controllers
         {
             try
             {
+                if (string.IsNullOrEmpty(sessionId)) return BadRequest("El id de la session es obligatorio");
                 var result = await _sessionService.LogOut(sessionId);
 
                 Response.Cookies.Delete("access_token", new CookieOptions
@@ -130,7 +129,7 @@ namespace FrameworkDriver_Api.src.Controllers
             catch (System.Exception ex)
             {
                 _logger.LogError(ex, "Error during logout");
-                return StatusCode(500, "Internal server error");
+                return StatusCode(500, "Internal server error" + ex.Message);
             }
         }
 
@@ -213,8 +212,6 @@ namespace FrameworkDriver_Api.src.Controllers
                     idUser = data.UserId,
                     idSession = data.Id,
                     idCompany = data.IdCompany,
-                    accessToken = token,
-                    refreshToken = data.Token,
                 });
             }
             catch (PinException pEx)

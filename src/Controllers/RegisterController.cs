@@ -14,7 +14,7 @@ namespace FrameworkDriver_Api.src.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    // [Authorize]
+    [Authorize]
 
     public class RegisterController : ControllerBase
     {

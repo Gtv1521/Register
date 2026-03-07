@@ -8,6 +8,7 @@ using FrameworkDriver_Api.src.Exceptions;
 using FrameworkDriver_Api.src.Interfaces;
 using FrameworkDriver_Api.src.Models;
 using FrameworkDriver_Api.Utils;
+using Microsoft.VisualBasic;
 using MongoDB.Bson.Serialization.Conventions;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
@@ -29,14 +30,22 @@ namespace FrameworkDriver_Api.src.Repositories
                 Builders<SessionModel>.Filter.Eq(x => x.Status, "Active")
             );
 
-            return await _sessionCollection.Find(filter).FirstOrDefaultAsync().ContinueWith(task => task != null);
+            var response = await _sessionCollection.Find(filter).FirstOrDefaultAsync();
+            return response != null;
         }
 
         // Inicia sesion
         public async Task<SessionModel> LogIn(SessionModel session)
         {
-
-            return await _sessionCollection.InsertOneAsync(session).ContinueWith(task => session);
+            try
+            {
+                await _sessionCollection.InsertOneAsync(session);
+                return session;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"No se pudo inicar sesion {ex}");
+            }
         }
 
         // Cierra sesion
@@ -55,24 +64,22 @@ namespace FrameworkDriver_Api.src.Repositories
             var update = Builders<SessionModel>.Update
                     .Set(s => s.EndTime, DateTime.UtcNow)
                     .Set(s => s.Status, "Inactive");
-            return await _sessionCollection.UpdateOneAsync(session, update)
-                    .ContinueWith(x => x.Result.ModifiedCount > 0);
+            var reponse = await _sessionCollection.UpdateOneAsync(session, update);
+            return reponse.ModifiedCount > 0;
         }
 
         // Crea un usuario y una sesion
         public async Task<SessionModel> SignIn(SessionModel user)
         {
-            return await _sessionCollection.InsertOneAsync(user).ContinueWith(task =>
+            try
             {
-                return new SessionModel
-                {
-                    Id = user.Id,
-                    UserId = user.UserId,
-                    StartTime = DateTime.UtcNow,
-                    Status = "Active",
-                    Token = user.Token
-                };
-            });
+                await _sessionCollection.InsertOneAsync(user);
+                return user;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("no se pudo iniciar session", ex);
+            }
         }
 
         public async Task<long> CountAsync(string Id)
@@ -89,7 +96,8 @@ namespace FrameworkDriver_Api.src.Repositories
             var busca = await _sessionCollection.Find(filter).FirstOrDefaultAsync();
             if (busca == null) return false;
             var update = Builders<SessionModel>.Update.Set(task => task.Token, tokenNew);
-            return await _sessionCollection.UpdateOneAsync(filter, update).ContinueWith(task => task.Result.ModifiedCount > 0);
+            var response = await _sessionCollection.UpdateOneAsync(filter, update);
+            return response.ModifiedCount > 0;
         }
 
         public async Task<IEnumerable<SessionModel>> OpenSessions(string IdUser)

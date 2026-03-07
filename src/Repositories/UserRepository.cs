@@ -40,13 +40,12 @@ namespace FrameworkDriver_Api.src.Repositories
                 .ContinueWith(task => task.Result.DeletedCount > 0);
         }
 
-        public async Task<IEnumerable<UserModel>> GetAllAsync(int pageNumber, int pageSize, string? idCompany = null)
+        public async Task<IEnumerable<UserModel>> GetAllAsync(int pageNumber, int pageSize, string? idCompany )
         {
-            return await _users.Find(_ => true)
+            return await _users.Find(x => x.IdCompany == idCompany)
             .Skip((pageNumber - 1) * pageSize)
             .Limit(pageSize)
-            .ToListAsync()
-            .ContinueWith(task => (IEnumerable<UserModel>)task.Result);
+            .ToListAsync();
         }
 
         public async Task<UserModel> GetByIdAsync(string id)

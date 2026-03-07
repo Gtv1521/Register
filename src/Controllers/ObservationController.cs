@@ -13,7 +13,7 @@ using ZstdSharp.Unsafe;
 namespace FrameworkDriver_Api.src.Controllers
 {
     [ApiController]
-    // [Authorize]
+    [Authorize]
     [Route("api/[controller]")]
     public class ObservationController : ControllerBase
     {

@@ -59,6 +59,7 @@ namespace FrameworkDriver_Api.src.Services
                 var session = new SessionModel
                 {
                     UserId = user.Id,
+                    IdCompany = user.IdCompany,
                     StartTime = DateTime.UtcNow,
                     Status = "Active",
                     Token = tokenRefresh
@@ -119,27 +120,26 @@ namespace FrameworkDriver_Api.src.Services
                 </article>"
             );
             //  se crea la sesion en db
-            return await _sessionRepository.SignIn(new SessionModel
+            var responseSession = await _sessionRepository.SignIn(new SessionModel
             {
                 UserId = response,
                 StartTime = DateTime.UtcNow,
                 Status = "Active",
                 Token = tokenRefresh
-            }).ContinueWith(task =>
-            {
-                if (task.Result == null)
-                {
-                    throw new UserException("User could not be created");
-                }
-
-                return (new SessionModel
-                {
-                    Id = task.Result.Id,
-                    UserId = task.Result.UserId,
-                    IdCompany = user.IdCompany,
-                    Token = tokenRefresh
-                }, AccesToken );
             });
+
+            if (string.IsNullOrEmpty(responseSession.Id))
+            {
+                throw new UserException("User could not be created");
+            }
+
+            return (new SessionModel
+            {
+                Id = responseSession.Id,
+                UserId = responseSession.UserId,
+                IdCompany = user.IdCompany,
+                Token = tokenRefresh
+            }, AccesToken);
         }
 
         // Valida si el email ya existe
