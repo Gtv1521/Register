@@ -220,8 +220,8 @@ namespace FrameworkDriver_Api.src.Services
                             <body style='font-family: Arial, sans-serif;'>
                                 <h2>Actualización de tu registro</h2>
                                 <h4>Buen día</h4>
-                                <p><strong>Estado:</strong> {register.StatusRegister}</p>
-                                <p><strong>Observación:</strong></p>
+                                <p><strong>Estado: </strong> {register.StatusRegister}</p>
+                                <p><strong>Observación: </strong></p>
                                 <p>{item.Description.Replace("\n", "<br>")}</p>
 
                                 <h3>Evidencias:</h3>
@@ -260,7 +260,10 @@ namespace FrameworkDriver_Api.src.Services
             {
                 ObservationType.Informacion => Status.EnProgreso,
                 ObservationType.Cancelado => Status.Cancelado,
+                ObservationType.Pendiente => Status.Pendiente,
                 ObservationType.Solucion => Status.Completado,
+                ObservationType.Entregado => Status.Entregado,
+
                 _ => register.StatusRegister // Si no coincide, mantenemos el estado actual
             };
             return await _register.UpdateAsync(register.Id, register);

@@ -152,14 +152,13 @@ namespace FrameworkDriver_Api.src.Repositories
 
         public async Task<RegisterModel> GetByIdAsync(string id)
         {
-            return await _context.Registers.FindAsync(register => register.Id == id)
-                .ContinueWith(task => task.Result.FirstOrDefault());
+            return await _context.Registers.FindAsync(register => register.Id == id).Result.FirstOrDefaultAsync();
         }
 
         public async Task<bool> UpdateAsync(string id, RegisterModel item)
         {
-            return await _context.Registers.ReplaceOneAsync(register => register.Id == id, item)
-                .ContinueWith(task => task.Result.ModifiedCount > 0);
+            var result = await _context.Registers.ReplaceOneAsync(register => register.Id == id, item);
+            return result.ModifiedCount > 0;
         }
 
         public async Task<bool> UpdateQr(string urlImage, string idImage, string idInsert)
@@ -175,7 +174,7 @@ namespace FrameworkDriver_Api.src.Repositories
         {
             var now = DateTime.Now;
 
-            string datePart = now.ToString("yyMMddHHmmss"); 
+            string datePart = now.ToString("yyMMddHHmmss");
 
             return $"REG-{datePart}";
         }

@@ -37,6 +37,8 @@ namespace FrameworkDriver_Api.Models
         EnProgreso,
         [Display(Name = "Completado")]
         Completado,
+        [Display(Name = "Entregado")]
+        Entregado,
         [Display(Name = "Cancelado")]
         Cancelado
     }

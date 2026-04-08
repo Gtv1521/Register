@@ -32,9 +32,14 @@ namespace FrameworkDriver_Api.Models
     {
         [Display(Name = "Informacion")]
         Informacion,
+        [Display(Name = "Pendiente")]
+        Pendiente,
         [Display(Name = "Cancelado")]
         Cancelado,
         [Display(Name = "Solucion")]
-        Solucion
+        Solucion, 
+        [Display(Name = "Entregado")]
+        Entregado
+
     }
 }
