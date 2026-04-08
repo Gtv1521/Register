@@ -7,6 +7,10 @@ namespace FrameworkDriver_Api.src.Exceptions
 {
     public class MaxConnectionException : Exception
     {
-        public MaxConnectionException(string message) : base(message) { }
+        public string Id { get; }
+        public MaxConnectionException(string message, string id) : base(message)
+        {
+            Id = id;
+        }
     }
 }

@@ -45,29 +45,43 @@ namespace FrameworkDriver_Api.src.Services
             try
             {
                 var FileData = new List<PhotosModel>();
-                // subida del archivo de imagen o video.
-                if (observation.Photos != null)
-                {
-                    for (int i = 0; i < observation.Photos.Count; i++)
-                    {
-                        var photos = observation.Photos[i];
-                        if (photos != null)
-                        {
-                            (string? image, string? idImage) = await _fileUpload.UploadMedia(photos, "observation");
-                            if (image != null && idImage != null)
-                            {
-                                FileData.Add(new PhotosModel
-                                {
-                                    Id = idImage,
-                                    Photo = image,
-                                });
-                            }
-                            // si existe un error al subir un archivo se notifica.
-                            else
-                            {
-                                _logger.LogInformation("Error al subir el archivo " + photos);
-                            }
 
+                if (observation.Photos != null && observation.Photos.Any())
+                {
+                    // 1. Creamos todas las tareas de subida al mismo tiempo (sin el await todavía)
+                    var uploadTasks = observation.Photos
+                        .Where(photo => photo != null)
+                        .Select(async photo =>
+                        {
+                            try
+                            {
+                                var (url, id) = await _fileUpload.UploadMedia(photo, "observation");
+                                return new { Success = url != null && id != null, Url = url, Id = id, PhotoName = photo.FileName };
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogError($"Excepción al subir {photo.FileName}: {ex.Message}");
+                                return new { Success = false, Url = (string?)null, Id = (string?)null, PhotoName = photo.FileName };
+                            }
+                        });
+
+                    // 2. Ejecutamos todas las tareas en paralelo y esperamos a que todas terminen
+                    var results = await Task.WhenAll(uploadTasks);
+
+                    // 3. Filtramos los resultados exitosos y llenamos tu lista
+                    foreach (var res in results)
+                    {
+                        if (res.Success)
+                        {
+                            FileData.Add(new PhotosModel
+                            {
+                                Id = res.Id!,
+                                Photo = res.Url!,
+                            });
+                        }
+                        else
+                        {
+                            _logger.LogWarning($"No se pudo subir el archivo: {res.PhotoName}");
                         }
                     }
                 }
@@ -89,8 +103,8 @@ namespace FrameworkDriver_Api.src.Services
                             <html>
                             <body style='font-family: Arial, sans-serif;'>
                                 <h2>Actualización de tu registro</h2>
-                                <h4>Buen día</h4>
-                                <p><strong>Estado:</strong> {register.StatusRegister}</p>
+                                <h4>Notificacion de servicio.</h4>
+                                <p><strong>Estado: </strong> {register.StatusRegister}</p>
                                 <p><strong>Observación:</strong></p>
                                 <p>{observation.Description.Replace("\n", "<br>")}</p>
 
@@ -109,13 +123,13 @@ namespace FrameworkDriver_Api.src.Services
                 if (observation.NotificaWhatsapp)
                 {
                     //  *🔹 Actualización de Registro*
-                    var mensajeWhatsapp = $"*Actualización de Registro*\n\n*Estado:* {register.StatusRegister}.\n\n*Observación:* \n{observation.Description}.\n\n*Cliente notificado*";
+                    var mensajeWhatsapp = $"*Actualización de servicio* \n\n*Estado:* {register.StatusRegister}.\n\n*Observación:* \n{observation.Description}.\n\n*Cliente notificado*";
                     // envia mensaje a whatsapp
                     await _wh.SendMenssageAsync(mensajeWhatsapp, client.Phone, FileData);
                 }
 
                 //  retorna un id de objeto creado
-                return await _observation.CreateAsync(new ObservationModel
+                var result = await _observation.CreateAsync(new ObservationModel
                 {
                     IdRegister = observation.IdRegister,
                     Type = observation.Type,
@@ -124,6 +138,11 @@ namespace FrameworkDriver_Api.src.Services
                     IdUser = observation.IdUser,
                     Photos = FileData,
                 });
+
+                // se actualiza el estado del registro dependiendo del tipo de observacion creada
+                var response = await UpdateRegisterStatus(register, observation.Type);
+
+                return result;
 
             }
             catch (System.Exception ex)
@@ -201,8 +220,8 @@ namespace FrameworkDriver_Api.src.Services
                             <body style='font-family: Arial, sans-serif;'>
                                 <h2>Actualización de tu registro</h2>
                                 <h4>Buen día</h4>
-                                <p><strong>Estado:</strong> {register.StatusRegister}</p>
-                                <p><strong>Observación:</strong></p>
+                                <p><strong>Estado: </strong> {register.StatusRegister}</p>
+                                <p><strong>Observación: </strong></p>
                                 <p>{item.Description.Replace("\n", "<br>")}</p>
 
                                 <h3>Evidencias:</h3>
@@ -233,6 +252,21 @@ namespace FrameworkDriver_Api.src.Services
                 throw new Exception("Error al actualizar la observacion.");
             }
 
+        }
+
+        private async Task<bool> UpdateRegisterStatus(RegisterModel register, ObservationType newStatus)
+        {
+            register.StatusRegister = newStatus switch
+            {
+                ObservationType.Informacion => Status.EnProgreso,
+                ObservationType.Cancelado => Status.Cancelado,
+                ObservationType.Pendiente => Status.Pendiente,
+                ObservationType.Solucion => Status.Completado,
+                ObservationType.Entregado => Status.Entregado,
+
+                _ => register.StatusRegister // Si no coincide, mantenemos el estado actual
+            };
+            return await _register.UpdateAsync(register.Id, register);
         }
     }
 }

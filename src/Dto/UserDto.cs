@@ -16,7 +16,8 @@ namespace FrameworkDriver_Api.src.Dto
         public string Email { get; set; } = string.Empty;
         [Required]
         public string Password { get; set; } = string.Empty;
-
+        [Required]
+        public string IdCompany { get; set; } = string.Empty;
         [Required]
         public Role Rol { get; set; }
     }

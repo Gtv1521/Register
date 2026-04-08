@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices.Marshalling;
 using System.Threading.Tasks;
 using CloudinaryDotNet.Actions;
+using FrameworkDriver_Api.src.Dto;
 using FrameworkDriver_Api.src.Exceptions;
 using FrameworkDriver_Api.src.Interfaces;
 using FrameworkDriver_Api.src.Models;
@@ -35,7 +36,7 @@ namespace FrameworkDriver_Api.src.Services
         }
 
         // Inicia sesion
-        public async Task<(SessionModel data, string Token)> LogIn(string email, string password)
+        public async Task<(SessionModel data, string Token, string Theme)> LogIn(string email, string password, NavDataDto navData)
         {
             var user = await _userRepository.LoadByEmailAsync(email);
 
@@ -48,7 +49,7 @@ namespace FrameworkDriver_Api.src.Services
 
             var sessions = await _sessionRepository.CountAsync(user.Id);
             if (sessions >= 3)
-                throw new MaxConnectionException("Máximas conexiones activas alcanzadas (3)");
+                throw new MaxConnectionException("Máximas conexiones activas alcanzadas (3)", user.Id);
 
 
 
@@ -59,16 +60,20 @@ namespace FrameworkDriver_Api.src.Services
                 var session = new SessionModel
                 {
                     UserId = user.Id,
+                    IdCompany = user.IdCompany,
                     StartTime = DateTime.UtcNow,
                     Status = "Active",
-                    Token = tokenRefresh
+                    Token = tokenRefresh,
+                    Navegador = navData.Navegador ?? "Desconocido",
+                    VersionNavegador = navData.VersionNavegador ?? "Desconocida",
+                    SistemaOperativo = navData.SistemaOperativo ?? "Desconocido"
                 };
 
                 // Aqui deberia guardarse la sesion en la base de datos
-                return await _sessionRepository.LogIn(session).ContinueWith(task =>
-                {
-                    return (task.Result, AccesToken);
-                });
+                var response = await _sessionRepository.LogIn(session);
+                response.IdCompany = user.IdCompany;
+
+                return (response, AccesToken, user.Theme);
             }
             else
             {
@@ -96,6 +101,7 @@ namespace FrameworkDriver_Api.src.Services
                 Name = user.Name,
                 Email = user.Email,
                 Password = hash,
+                IdCompany = user.IdCompany,
                 Rol = user.Rol
             });
 
@@ -103,50 +109,48 @@ namespace FrameworkDriver_Api.src.Services
             var tokenRefresh = await _tokenService.GenerateRefreshToken(response);
             var AccesToken = await _tokenService.GenerateToken(user, 1); // Token valido por 1 hora
 
-            await _email.EnviarEmailAsync(
-                    user.Email,
-                    "Bienvenido a nuestro servicio",
-                    $@"<h1>{user.Name}</h1>
-                    <br>
-                    <article>
-                    Hola, Bienvenido !!! <br>
-                    Este es el medio de comunicacion con el cliente donde se le
-                    notifica novedades de lo que pasa con el servio que se le brinda.
-                    </article>
-                    <article>
-                    Las funciones que hay son para facilitar tu vida...
-                    </article>"
+            var emailTask = _email.EnviarEmailAsync(
+                user.Email,
+                "Bienvenido a nuestro servicio",
+                $@"<h1>{user.Name}</h1>
+                <br>
+                <article>
+                Hola, Bienvenido !!! <br>
+                Este es el medio de comunicacion con el cliente donde se le
+                notifica novedades de lo que pasa con el servio que se le brinda.
+                </article>
+                <article>
+                Las funciones que hay son para facilitar tu vida...
+                </article>"
             );
             //  se crea la sesion en db
-            return await _sessionRepository.SignIn(new SessionModel
+            var responseSession = await _sessionRepository.SignIn(new SessionModel
             {
                 UserId = response,
                 StartTime = DateTime.UtcNow,
                 Status = "Active",
                 Token = tokenRefresh
-            }).ContinueWith(task =>
-            {
-                if (task.Result == null)
-                {
-                    throw new UserException("User could not be created");
-                }
-
-                return (new SessionModel
-                {
-                    Id = task.Result.Id,
-                    UserId = task.Result.UserId,
-                    Token = tokenRefresh
-                }, AccesToken);
             });
+
+            if (string.IsNullOrEmpty(responseSession.Id))
+            {
+                throw new UserException("User could not be created");
+            }
+
+            return (new SessionModel
+            {
+                Id = responseSession.Id,
+                UserId = responseSession.UserId,
+                IdCompany = user.IdCompany,
+                Token = tokenRefresh
+            }, AccesToken);
         }
 
         // Valida si el email ya existe
         public async Task<bool> ValidEmail(string email)
         {
-            return await _userRepository.LoadByEmailAsync(email).ContinueWith(task =>
-            {
-                return task.Result != null;
-            });
+            var response = await _userRepository.LoadByEmailAsync(email);
+            return response != null;
         }
 
         public async Task<(string tokenRefresh, string token)> updateToken(string tokenAntiguo, string idUser)

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace FrameworkDriver_Api.src.Dto
 {
-    public class LoginRequest
+    public class LoginRequest : NavDataDto
     {
         [Required(ErrorMessage = "El email es obligatorio")]
         [EmailAddress(ErrorMessage = "Email no válido")]

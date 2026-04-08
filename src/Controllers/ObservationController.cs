@@ -13,7 +13,7 @@ using ZstdSharp.Unsafe;
 namespace FrameworkDriver_Api.src.Controllers
 {
     [ApiController]
-    // [Authorize]
+    [Authorize]
     [Route("api/[controller]")]
     public class ObservationController : ControllerBase
     {
@@ -39,7 +39,7 @@ namespace FrameworkDriver_Api.src.Controllers
                 if (observation != null)
                 {
                     var clientId = await _observationService.CreateObservationAsync(observation);
-                    return StatusCode(StatusCodes.Status200OK);
+                    return CreatedAtAction(nameof(GetClientById), new { id = clientId }, new { id = clientId });
                 }
                 return BadRequest("Client data is null");
             }
@@ -49,6 +49,7 @@ namespace FrameworkDriver_Api.src.Controllers
                 throw;
             }
         }
+        
         [HttpGet("{id}")]
         public async Task<IActionResult> GetClientById(string id)
         {
