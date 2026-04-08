@@ -2,6 +2,7 @@ using FrameworkDriver_Api.Models;
 using FrameworkDriver_Api.src.Dto;
 using FrameworkDriver_Api.src.Interfaces;
 using FrameworkDriver_Api.src.Projections;
+using Microsoft.AspNetCore.Routing.Tree;
 using MongoDB.Bson;
 
 
@@ -11,30 +12,46 @@ namespace FrameworkDriver_Api.src.Services
     {
         private readonly IRegisters<RegisterModel, ListRegistersProjection, RegisterObsCliProjection> _registerRepository;
         private readonly QrInterface _qrService;
+        private readonly IUpdateQr _qr;
         public RegisterService(
             IRegisters<RegisterModel, ListRegistersProjection, RegisterObsCliProjection> registerRepository,
-            QrInterface qrService
+            QrInterface qrService,
+            IUpdateQr qr
             )
         {
             _registerRepository = registerRepository;
             _qrService = qrService;
+            _qr = qr;
         }
 
         public async Task<string> AddRegisterAsync(RegisterDTO register)
         {
-            string Url = string.Empty; string Id = string.Empty;
-
-
-            if (register.UrlRuta != string.Empty) (Url, Id) = await _qrService.GenerateQr(register.UrlRuta);
-
-            return await _registerRepository.CreateAsync(new RegisterModel
+            var nextRegistroNumber = await _registerRepository.GetNextRegistroNumberAsync();
+            var result = await _registerRepository.CreateAsync(new RegisterModel
             {
                 IdClient = register.IdClient,
+                IdCompany = register.IdCompany,
+                IdUser = register.IdUser,
                 StatusRegister = register.StatusRegister,
+                RegistroNumber = nextRegistroNumber,
                 CreatedAt = DateTime.UtcNow, // Guardar en UTC
-                IdQr = Id,
-                UrlQr = Url
             });
+
+            var BaseUrl = $"{register.UrlRuta}/{result}";
+
+            string Url = string.Empty; string Id = string.Empty;
+
+            if (register.UrlRuta != string.Empty) (Url, Id) = await _qrService.GenerateQr(BaseUrl);
+
+            var qrResponse =  await UpdateQr(Url, Id, result);
+            if (qrResponse == false) throw new Exception("No se pudo crear el codigo qr");
+            return result;
+            
+        }
+
+        public async Task<bool> UpdateQr(string url, string id, string idInsert)
+        {
+            return await _qr.UpdateQr(url, id, idInsert);
         }
 
         // hace un filtro del cliente y sale una lista de observaciones 
@@ -43,9 +60,9 @@ namespace FrameworkDriver_Api.src.Services
             return await _registerRepository.FilterData(filter);
         }
 
-        public async Task<IEnumerable<RegisterObsCliProjection>> GetAllRegistersAsync(int pageNumber, int pageSize)
+        public async Task<IEnumerable<RegisterObsCliProjection>> GetAllRegistersAsync(int pageNumber, int pageSize, string? idCompany = null)
         {
-            return await _registerRepository.GetAllAsync(pageNumber, pageSize);
+            return await _registerRepository.GetAllAsync(pageNumber, pageSize, idCompany);
         }
 
         public async Task<RegisterModel> GetRegisterByIdAsync(string id)

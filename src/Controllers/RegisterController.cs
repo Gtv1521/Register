@@ -14,7 +14,7 @@ namespace FrameworkDriver_Api.src.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    // [Authorize]
+    [Authorize]
 
     public class RegisterController : ControllerBase
     {
@@ -30,15 +30,17 @@ namespace FrameworkDriver_Api.src.Controllers
         [HttpPost]
         public async Task<IActionResult> AddRegister([FromBody] RegisterDTO register)
         {
+            if(!ModelState.IsValid) return BadRequest(ModelState);
             var result = await _registerService.AddRegisterAsync(register);
-            return Ok(result);
+            return CreatedAtAction(nameof(GetRegisterById), new { id = result }, new { id = result });
         }
 
         [HttpGet]
         [AllowAnonymous] // entrada a anonima
-        public async Task<IActionResult> GetAllRegisters([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+        public async Task<IActionResult> GetAllRegisters([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10, [FromQuery] string? idCompany = null)
         {
-            var result = await _registerService.GetAllRegistersAsync(pageNumber, pageSize);
+            if(idCompany == null) return BadRequest("El idCompany es requerido");
+            var result = await _registerService.GetAllRegistersAsync(pageNumber, pageSize, idCompany);
             return Ok(result);
         }
 

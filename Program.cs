@@ -96,7 +96,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
 });
 
 // iniciacion de servicios externos
-builder.Services.AddScoped<Context>();
+builder.Services.AddSingleton<Context>();
+builder.Services.AddSingleton<IIndexInitializer, MongoIndexInitializer>();
 
 // add services for Services
 builder.Services.AddScoped<ClientService>();
@@ -108,6 +109,7 @@ builder.Services.AddScoped<RegisterService>();
 builder.Services.AddScoped<ObservationService>();
 builder.Services.AddScoped<SessionService>();
 builder.Services.AddScoped<EmailService>();
+builder.Services.AddScoped<CompanyService>();
 
 builder.Services.AddScoped<IHashPass<UserDto>, HashPassword>();
 //  add services for repositories
@@ -115,11 +117,13 @@ builder.Services.AddScoped<IToken<UserModel>, Token>();
 
 // add repositories
 builder.Services.AddScoped<IAddFilter<ClientModel, ClientModel>, ClientRepository>();
+builder.Services.AddScoped<IAddFilter<CompanyModel, CompanyModel>, CompanyRepository>();
 builder.Services.AddScoped<ICrudWithLoad<UserModel>, UserRepository>();
 builder.Services.AddScoped<IRegisters<RegisterModel, ListRegistersProjection, RegisterObsCliProjection>, RegisterRepository>();
 builder.Services.AddScoped<ILoadAllId<ObservationModel>, ObservationRepository>();
 builder.Services.AddScoped<ISession<SessionModel>, SessionRepository>();
 builder.Services.AddScoped<QrInterface, QrService>();
+builder.Services.AddScoped<IUpdateQr, RegisterRepository>();
 //add utils
 builder.Services.AddScoped<FileUpload>();
 
@@ -176,11 +180,17 @@ builder.Services.AddCors(options =>
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials()
-            .SetIsOriginAllowedToAllowWildcardSubdomains(); ;
+            .SetIsOriginAllowedToAllowWildcardSubdomains();
     });
 });
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var initializer = scope.ServiceProvider.GetRequiredService<IIndexInitializer>();
+    await initializer.InitializeIndexesAsync();
+}
 
 // Configure the HTTP request pipeline.
 // if (app.Environment.IsDevelopment())

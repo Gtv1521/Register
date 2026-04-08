@@ -6,6 +6,9 @@ using FrameworkDriver_Api.src.Exceptions;
 using FrameworkDriver_Api.src.Interfaces;
 using FrameworkDriver_Api.src.Models;
 using FrameworkDriver_Api.Utils;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Microsoft.IdentityModel.Tokens.Experimental;
 using Microsoft.VisualBasic;
 using MongoDB.Driver;
 using ZstdSharp.Unsafe;
@@ -14,17 +17,18 @@ namespace FrameworkDriver_Api.src.Repositories
 {
     public class UserRepository : ICrudWithLoad<UserModel>
     {
-        private readonly IMongoCollection<UserModel> _users;
+        private readonly Context _context;
         public UserRepository(Context context)
         {
-            _users = context.GetCollection<UserModel>("Users");
+            _context = context;
         }
 
         public async Task<string> CreateAsync(UserModel item)
         {
             if (!GetMailAsync(item.Email).Result.Item1)
             {
-                 return await _users.InsertOneAsync(item).ContinueWith(task => item.Id);
+                await _context.Users.InsertOneAsync(item);
+                return item.Id;
             }
             else
             {
@@ -34,27 +38,35 @@ namespace FrameworkDriver_Api.src.Repositories
 
         public async Task<bool> DeleteAsync(string id)
         {
-            return await _users.DeleteOneAsync(user => user.Id == id)
-                .ContinueWith(task => task.Result.DeletedCount > 0);
+            var delete = await _context.Users.DeleteOneAsync(user => user.Id == id);
+            return delete.DeletedCount > 0;
         }
 
-        public async Task<IEnumerable<UserModel>> GetAllAsync(int pageNumber, int pageSize)
+        public async Task<IEnumerable<UserModel>> GetAllAsync(int pageNumber, int pageSize, string? idCompany)
         {
-            return await _users.Find(_ => true)
+            return await _context.Users.Find(x => x.IdCompany == idCompany)
             .Skip((pageNumber - 1) * pageSize)
             .Limit(pageSize)
-            .ToListAsync()
-            .ContinueWith(task => (IEnumerable<UserModel>)task.Result);
+            .ToListAsync();
         }
 
         public async Task<UserModel> GetByIdAsync(string id)
         {
-            return await _users.Find(user => user.Id == id).FirstOrDefaultAsync();
+            return await _context.Users.Find(user => user.Id == id).FirstOrDefaultAsync();
         }
 
         public async Task<UserModel?> LoadByEmailAsync(string email)
         {
-            return await GetMailAsync(email).ContinueWith(task => task.Result.Item2);
+            var response = await GetMailAsync(email);
+            return response.Item2;
+        }
+
+        public async Task<bool> SaveTheme(string idUser, string theme)
+        {
+            var filter = Builders<UserModel>.Filter.Eq(x => x.Id, idUser);
+            var update = Builders<UserModel>.Update.Set(x => x.Theme, theme);
+            var response = await _context.Users.UpdateOneAsync(filter, update);
+            return response.ModifiedCount > 0;
         }
 
         // public async Task<UserModel?> LoadByPinAsync(int pin)
@@ -70,29 +82,15 @@ namespace FrameworkDriver_Api.src.Repositories
                 .Set(u => u.Email, item.Email)
                 .Set(u => u.Password, item.Password);
 
-            return await _users.UpdateOneAsync(user => user.Id == id, updatedUser)
-                .ContinueWith(task => task.Result.ModifiedCount > 0);
+            var update = await _context.Users.UpdateOneAsync(user => user.Id == id, updatedUser);
+            return update.ModifiedCount > 0;
         }
 
         //  valida que el mail no exista
         private async Task<(bool, UserModel?)> GetMailAsync(string mail)
         {
-            return await _users.Find(user => user.Email == mail).FirstOrDefaultAsync()
-            .ContinueWith(task =>
-            {
-                var user = task.Result; // O task.GetAwaiter().GetResult()
-                return (user != null, user);
-            });
+            var user = await _context.Users.Find(user => user.Email == mail).FirstOrDefaultAsync();
+            return (user != null, user);
         }
-
-        // private async Task<(bool status, UserModel? objecto)> UniquePinAsync(int pin)
-        // {
-        //     return await _users.Find(u => u.pin == pin).FirstOrDefaultAsync()
-        //     .ContinueWith(task =>
-        //     {
-        //         var user = task.Result; 
-        //         return (user == null, user); // si es null el pin no existe
-        //     });
-        // }
     }
 }

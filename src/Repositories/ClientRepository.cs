@@ -13,22 +13,23 @@ namespace FrameworkDriver_Api.src.Repositories
 {
     public class ClientRepository : IAddFilter<ClientModel, ClientModel>
     {
-        private readonly IMongoCollection<ClientModel> _clients;
+        private readonly Context _context;
         public ClientRepository(Context context)
         {
-            _clients = context.GetCollection<ClientModel>("Clients");
+            _context = context;
         }
 
 
         public async Task<string> CreateAsync(ClientModel item)
         {
-            return await _clients.InsertOneAsync(item).ContinueWith(task => item.Id);
+            await _context.Clients.InsertOneAsync(item);
+            return item.Id;
         }
 
         public async Task<bool> DeleteAsync(string id)
         {
-            return await _clients.DeleteOneAsync(client => client.Id == id)
-                .ContinueWith(task => task.Result.DeletedCount > 0);
+            var delete = await _context.Clients.DeleteOneAsync(client => client.Id == id);
+            return delete.DeletedCount > 0;
         }
 
         public async Task<IEnumerable<ClientModel>> FilterData(string text)
@@ -36,12 +37,12 @@ namespace FrameworkDriver_Api.src.Repositories
             var regular = new BsonRegularExpression(text, "i");
 
             var filter = Builders<ClientModel>.Filter.Regex(x => x.Email, regular);
-            return await _clients.Find(filter).ToListAsync();
+            return await _context.Clients.Find(filter).ToListAsync();
         }
 
-        public async Task<IEnumerable<ClientModel>> GetAllAsync(int pageNumber, int pageSize)
+        public async Task<IEnumerable<ClientModel>> GetAllAsync(int pageNumber, int pageSize, string? idCompany = null)
         {
-            return await _clients.Find(_ => true)
+            return await _context.Clients.Find(_ => true)
             .Skip((pageNumber - 1) * pageSize)
             .Limit(pageSize)
             .ToListAsync();
@@ -49,8 +50,8 @@ namespace FrameworkDriver_Api.src.Repositories
 
         public async Task<ClientModel> GetByIdAsync(string id)
         {
-            return await _clients.FindAsync(client => client.Id == id)
-                .ContinueWith(task => task.Result.FirstOrDefault());
+            return await _context.Clients.FindAsync(client => client.Id == id)
+                .Result.FirstOrDefaultAsync();
         }
 
         public async Task<bool> UpdateAsync(string id, ClientModel item)
@@ -61,8 +62,9 @@ namespace FrameworkDriver_Api.src.Repositories
                 .Set(x => x.Email, item.Email)
                 .Set(x => x.Name, item.Name)
                 .Set(x => x.Phone, item.Phone);
-         
-            return await _clients.UpdateOneAsync(filter, update).ContinueWith(x => x.Result.ModifiedCount > 0);
+
+            var result = await _context.Clients.UpdateOneAsync(filter, update);
+            return result.ModifiedCount > 0;
         }
     }
 }

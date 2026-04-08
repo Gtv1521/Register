@@ -4,12 +4,14 @@ using System.Linq;
 using System.Threading.Tasks;
 using FrameworkDriver_Api.src.Interfaces;
 using FrameworkDriver_Api.src.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FrameworkDriver_Api.src.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class QrController : ControllerBase
     {
         private readonly QrInterface _qr;

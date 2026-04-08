@@ -23,6 +23,7 @@ namespace FrameworkDriver_Api.src.Services
                 Name = user.Name, 
                 Email = user.Email, 
                 Password = user.Password,
+                IdCompany = user.IdCompany,
                 Rol = user.Rol
             });
         }
@@ -30,9 +31,9 @@ namespace FrameworkDriver_Api.src.Services
         {
             return await _user.GetByIdAsync(id);
         }
-        public async Task<IEnumerable<UserModel>> GetAllUsersAsync(int pageNumber, int pageSize)
+        public async Task<IEnumerable<UserModel>> GetAllUsersAsync(string company, int pageNumber, int pageSize)
         {
-            return await _user.GetAllAsync(pageNumber, pageSize);
+            return await _user.GetAllAsync(pageNumber, pageSize, company);
         }
 
         public async Task<bool> UpdateUserAsync(string id, UserDto user)
@@ -48,6 +49,11 @@ namespace FrameworkDriver_Api.src.Services
         public async Task<bool> DeleteUserAsync(string id)
         {
             return await _user.DeleteAsync(id);
+        }
+
+        public async Task<bool> SaveTheme(string idUser, string theme)
+        {
+            return await _user.SaveTheme(idUser, theme);
         }
     }
 }

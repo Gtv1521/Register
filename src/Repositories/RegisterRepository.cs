@@ -17,28 +17,58 @@ using MongoDB.Driver;
 
 namespace FrameworkDriver_Api.src.Repositories
 {
-    public class RegisterRepository : IRegisters<RegisterModel, ListRegistersProjection, RegisterObsCliProjection>
+    public class RegisterRepository : IRegisters<RegisterModel, ListRegistersProjection, RegisterObsCliProjection>, IUpdateQr
     {
-        private readonly IMongoCollection<RegisterModel> _register;
-        private readonly IMongoCollection<ClientModel> _client;
-        private readonly IMongoCollection<ObservationModel> _observation;
+        private readonly Context _context;
+        private static readonly Random _random = new Random();
         private ILogger<RegisterRepository> _logger;
         public RegisterRepository(Context context, ILogger<RegisterRepository> logger)
         {
-            _register = context.GetCollection<RegisterModel>("Registers");
-            _client = context.GetCollection<ClientModel>("Clients");
-            _observation = context.GetCollection<ObservationModel>("Observations");
+            _context = context;
             _logger = logger;
+
+            // Migrar registros existentes
+            MigrateRegistroNumberAsync().ConfigureAwait(false);
         }
 
-        public Task<string> CreateAsync(RegisterModel item)
+        private async Task MigrateRegistroNumberAsync()
         {
-            return _register.InsertOneAsync(item).ContinueWith(task => item.Id);
+            try
+            {
+                // Buscar registros con RegistroNumber vacío o nulo
+                var registrosToMigrate = await _context.Registers
+                    .Find(x => x.RegistroNumber == null || x.RegistroNumber == string.Empty)
+                    .ToListAsync();
+
+                if (registrosToMigrate.Count > 0)
+                {
+                    foreach (var registro in registrosToMigrate)
+                    {
+                        var counter = await _context.Registers.CountDocumentsAsync(_ => true) + 1;
+                        var newRegistroNumber = $"REG-{counter:D6}";
+
+                        var filter = Builders<RegisterModel>.Filter.Eq(x => x.Id, registro.Id);
+                        var update = Builders<RegisterModel>.Update.Set(x => x.RegistroNumber, newRegistroNumber);
+
+                        await _context.Registers.UpdateOneAsync(filter, update);
+                    }
+                    _logger.LogInformation("Migración de RegistroNumber completada");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error en migración de RegistroNumber: {ex.Message}");
+            }
+        }
+
+        public async Task<string> CreateAsync(RegisterModel item)
+        {
+            return await _context.Registers.InsertOneAsync(item).ContinueWith(task => item.Id);
         }
 
         public async Task<bool> DeleteAsync(string id)
         {
-            return await _register.DeleteOneAsync(register => register.Id == id)
+            return await _context.Registers.DeleteOneAsync(register => register.Id == id)
                 .ContinueWith(task => task.Result.DeletedCount > 0);
         }
 
@@ -47,10 +77,10 @@ namespace FrameworkDriver_Api.src.Repositories
             var regex = new BsonRegularExpression(text, "i");
             var filter = Builders<ClientModel>.Filter.Regex(x => x.Name, regex);
 
-            return await _client.Aggregate()
+            return await _context.Clients.Aggregate()
                 .Match(filter)
                 .Lookup(
-                    foreignCollection: _register,
+                    foreignCollection: _context.Registers,
                     localField: c => c.Id,
                     foreignField: r => r.IdClient,
                     @as: (ListRegistersProjection x) => x.Registers
@@ -58,13 +88,20 @@ namespace FrameworkDriver_Api.src.Repositories
                 .ToListAsync();
         }
 
-        public async Task<IEnumerable<RegisterObsCliProjection>> GetAllAsync(int pageNumber, int pageSize)
+        public async Task<IEnumerable<RegisterObsCliProjection>> GetAllAsync(int pageNumber, int pageSize, string? idCompany = null)
         {
             var skip = (pageNumber - 1) * pageSize;
 
-            var pipeline = _register.Aggregate()
-            .As<BsonDocument>()
+            if (idCompany == null) throw new Exception("El id de compañia no debe ser nulo");
 
+            var pipeline = _context.Registers.Aggregate()
+            .As<BsonDocument>();
+
+            // 🔹 Filtrar por idCompany si se proporciona
+            pipeline = pipeline.AppendStage<BsonDocument>(new BsonDocument("$match", new BsonDocument("IdCompany", new ObjectId(idCompany))));
+            // ordena del ultimo al primero 
+            pipeline = pipeline.AppendStage<BsonDocument>(new BsonDocument("$sort", new BsonDocument("CreatedAt", -1)));
+            pipeline = pipeline
             // 🔹 Lookup observación
             .AppendStage<BsonDocument>(new BsonDocument("$lookup", new BsonDocument
             {
@@ -108,20 +145,38 @@ namespace FrameworkDriver_Api.src.Repositories
 
             var result = bsonResult
                 .Select(doc => BsonSerializer.Deserialize<RegisterObsCliProjection>(doc))
+                .OrderByDescending(x => x.CreatedAt)
                 .ToList();
             return result;
         }
 
         public async Task<RegisterModel> GetByIdAsync(string id)
         {
-            return await _register.FindAsync(register => register.Id == id)
-                .ContinueWith(task => task.Result.FirstOrDefault());
+            return await _context.Registers.FindAsync(register => register.Id == id).Result.FirstOrDefaultAsync();
         }
 
         public async Task<bool> UpdateAsync(string id, RegisterModel item)
         {
-            return await _register.ReplaceOneAsync(register => register.Id == id, item)
-                .ContinueWith(task => task.Result.ModifiedCount > 0);
+            var result = await _context.Registers.ReplaceOneAsync(register => register.Id == id, item);
+            return result.ModifiedCount > 0;
+        }
+
+        public async Task<bool> UpdateQr(string urlImage, string idImage, string idInsert)
+        {
+            var filter = Builders<RegisterModel>.Filter.Eq(x => x.Id, idInsert);
+            var update = Builders<RegisterModel>.Update.Set(x => x.IdQr, idImage).Set(x => x.UrlQr, urlImage);
+
+            var result = await _context.Registers.UpdateOneAsync(filter, update);
+            return result.ModifiedCount > 0;
+        }
+
+        public async Task<string> GetNextRegistroNumberAsync()
+        {
+            var now = DateTime.Now;
+
+            string datePart = now.ToString("yyMMddHHmmss");
+
+            return $"REG-{datePart}";
         }
     }
 }

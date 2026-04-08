@@ -14,7 +14,7 @@ namespace FrameworkDriver_Api.src.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    // [Authorize]
+    [Authorize]
     public class ClientController : ControllerBase
     {
         public readonly ClientService _clientService;
@@ -32,13 +32,12 @@ namespace FrameworkDriver_Api.src.Controllers
             {
                 var clientId = await _clientService.CreateClientAsync(client);
                 if (client == null) return BadRequest("Client data is null");
-                return CreatedAtAction(nameof(GetClientById), new { id = clientId }, clientId);
+                return CreatedAtAction(nameof(GetClientById), new { id = clientId }, new { id = clientId });
 
             }
             catch (System.Exception ex)
             {
                 return BadRequest(ex.Message);
-                throw;
             }
         }
 

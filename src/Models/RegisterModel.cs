@@ -15,8 +15,14 @@ namespace FrameworkDriver_Api.Models
         [BsonRepresentation(BsonType.ObjectId)]
         public string Id { get; set; } = null!;
         
+        public string RegistroNumber { get; set; } = string.Empty; // Número incremental formateado (ej: REG-000001)
+        
         [BsonRepresentation(BsonType.ObjectId)]
         public string IdClient { get; set; } = null!; // referencia al cliente
+        [BsonRepresentation(BsonType.ObjectId)]
+        public string IdCompany { get; set; } = null!; // referencia a la empresa
+        [BsonRepresentation(BsonType.ObjectId)]
+        public string IdUser { get; set; } = null!; // referencia al usuario que crea el registro
         public Status StatusRegister { get; set; } // estado del registro
         public string UrlQr { get; set; } = string.Empty;
         public string IdQr { get; set; } = string.Empty;
@@ -26,12 +32,14 @@ namespace FrameworkDriver_Api.Models
     public enum Status
     {
         [Display(Name = "Pendiente")]
-        Pending,
+        Pendiente,
         [Display(Name = "En Progreso")]
-        InProgress,
+        EnProgreso,
         [Display(Name = "Completado")]
-        Completed,
+        Completado,
+        [Display(Name = "Entregado")]
+        Entregado,
         [Display(Name = "Cancelado")]
-        Cancelled
+        Cancelado
     }
 }

@@ -30,13 +30,16 @@ namespace FrameworkDriver_Api.Models
     // tipo de observacion
     public enum ObservationType
     {
-        [Display(Name = "Info")]
-        Info,
-        [Display(Name = "Warning")]
-        Warning,
-        [Display(Name = "Error")]
-        Error,
+        [Display(Name = "Informacion")]
+        Informacion,
+        [Display(Name = "Pendiente")]
+        Pendiente,
+        [Display(Name = "Cancelado")]
+        Cancelado,
         [Display(Name = "Solucion")]
-        Solution
+        Solucion, 
+        [Display(Name = "Entregado")]
+        Entregado
+
     }
 }
