@@ -96,7 +96,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
 });
 
 // iniciacion de servicios externos
-builder.Services.AddScoped<Context>();
+builder.Services.AddSingleton<Context>();
+builder.Services.AddSingleton<IIndexInitializer, MongoIndexInitializer>();
 
 // add services for Services
 builder.Services.AddScoped<ClientService>();
@@ -184,6 +185,12 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var initializer = scope.ServiceProvider.GetRequiredService<IIndexInitializer>();
+    await initializer.InitializeIndexesAsync();
+}
 
 // Configure the HTTP request pipeline.
 // if (app.Environment.IsDevelopment())

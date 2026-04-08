@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices.Marshalling;
 using System.Threading.Tasks;
 using CloudinaryDotNet.Actions;
+using FrameworkDriver_Api.src.Dto;
 using FrameworkDriver_Api.src.Exceptions;
 using FrameworkDriver_Api.src.Interfaces;
 using FrameworkDriver_Api.src.Models;
@@ -35,7 +36,7 @@ namespace FrameworkDriver_Api.src.Services
         }
 
         // Inicia sesion
-        public async Task<(SessionModel data, string Token)> LogIn(string email, string password)
+        public async Task<(SessionModel data, string Token, string Theme)> LogIn(string email, string password, NavDataDto navData)
         {
             var user = await _userRepository.LoadByEmailAsync(email);
 
@@ -62,14 +63,17 @@ namespace FrameworkDriver_Api.src.Services
                     IdCompany = user.IdCompany,
                     StartTime = DateTime.UtcNow,
                     Status = "Active",
-                    Token = tokenRefresh
+                    Token = tokenRefresh,
+                    Navegador = navData.Navegador ?? "Desconocido",
+                    VersionNavegador = navData.VersionNavegador ?? "Desconocida",
+                    SistemaOperativo = navData.SistemaOperativo ?? "Desconocido"
                 };
 
                 // Aqui deberia guardarse la sesion en la base de datos
                 var response = await _sessionRepository.LogIn(session);
                 response.IdCompany = user.IdCompany;
 
-                return (response, AccesToken);
+                return (response, AccesToken, user.Theme);
             }
             else
             {
@@ -145,10 +149,8 @@ namespace FrameworkDriver_Api.src.Services
         // Valida si el email ya existe
         public async Task<bool> ValidEmail(string email)
         {
-            return await _userRepository.LoadByEmailAsync(email).ContinueWith(task =>
-            {
-                return task.Result != null;
-            });
+            var response = await _userRepository.LoadByEmailAsync(email);
+            return response != null;
         }
 
         public async Task<(string tokenRefresh, string token)> updateToken(string tokenAntiguo, string idUser)

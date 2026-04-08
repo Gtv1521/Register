@@ -17,10 +17,10 @@ namespace FrameworkDriver_Api.src.Repositories
 {
     public class SessionRepository : ISession<SessionModel>
     {
-        private readonly IMongoCollection<SessionModel> _sessionCollection;
+        private readonly Context _context;
         public SessionRepository(Context context)
         {
-            _sessionCollection = context.GetCollection<SessionModel>("Sessions");
+            _context = context;
         }
         //  verifica si la sesion esta activa
         public async Task<bool> IsSessionActive(string sessionId)
@@ -30,7 +30,7 @@ namespace FrameworkDriver_Api.src.Repositories
                 Builders<SessionModel>.Filter.Eq(x => x.Status, "Active")
             );
 
-            var response = await _sessionCollection.Find(filter).FirstOrDefaultAsync();
+            var response = await _context.Sessions.Find(filter).FirstOrDefaultAsync();
             return response != null;
         }
 
@@ -39,7 +39,7 @@ namespace FrameworkDriver_Api.src.Repositories
         {
             try
             {
-                await _sessionCollection.InsertOneAsync(session);
+                await _context.Sessions.InsertOneAsync(session);
                 return session;
             }
             catch (Exception ex)
@@ -54,7 +54,7 @@ namespace FrameworkDriver_Api.src.Repositories
             var session = Builders<SessionModel>.Filter.Eq(s => s.Id, sessionId);
 
             // trae usuario
-            var user = await _sessionCollection.Find(session).FirstOrDefaultAsync();
+            var user = await _context.Sessions.Find(session).FirstOrDefaultAsync();
             var ids = await SessionsClose(user.UserId);
             foreach (var (item, index) in ids.Select((value, i) => (value, i)))
             {
@@ -64,7 +64,7 @@ namespace FrameworkDriver_Api.src.Repositories
             var update = Builders<SessionModel>.Update
                     .Set(s => s.EndTime, DateTime.UtcNow)
                     .Set(s => s.Status, "Inactive");
-            var reponse = await _sessionCollection.UpdateOneAsync(session, update);
+            var reponse = await _context.Sessions.UpdateOneAsync(session, update);
             return reponse.ModifiedCount > 0;
         }
 
@@ -73,7 +73,7 @@ namespace FrameworkDriver_Api.src.Repositories
         {
             try
             {
-                await _sessionCollection.InsertOneAsync(user);
+                await _context.Sessions.InsertOneAsync(user);
                 return user;
             }
             catch (Exception ex)
@@ -84,7 +84,7 @@ namespace FrameworkDriver_Api.src.Repositories
 
         public async Task<long> CountAsync(string Id)
         {
-            return await _sessionCollection.CountDocumentsAsync(user => user.UserId == Id && user.Status == "Active");
+            return await _context.Sessions.CountDocumentsAsync(user => user.UserId == Id && user.Status == "Active");
         }
 
         public async Task<bool> UpdateTokenRefresh(string token, string tokenNew, string id)
@@ -93,28 +93,28 @@ namespace FrameworkDriver_Api.src.Repositories
                 Builders<SessionModel>.Filter.Eq(fl => fl.Token, token),
                 Builders<SessionModel>.Filter.Eq(user => user.UserId, id));
 
-            var busca = await _sessionCollection.Find(filter).FirstOrDefaultAsync();
+            var busca = await _context.Sessions.Find(filter).FirstOrDefaultAsync();
             if (busca == null) return false;
             var update = Builders<SessionModel>.Update.Set(task => task.Token, tokenNew);
-            var response = await _sessionCollection.UpdateOneAsync(filter, update);
+            var response = await _context.Sessions.UpdateOneAsync(filter, update);
             return response.ModifiedCount > 0;
         }
 
         public async Task<IEnumerable<SessionModel>> OpenSessions(string IdUser)
         {
-            return await _sessionCollection.Find(x => x.UserId == IdUser).ToListAsync();
+            return await _context.Sessions.Find(x => x.UserId == IdUser).SortByDescending(x => x.StartTime).ToListAsync();
         }
 
         private async Task<IEnumerable<SessionModel>> SessionsClose(string id)
         {
-            return await _sessionCollection.Find(x => x.UserId == id && x.Status == "Inactive")
+            return await _context.Sessions.Find(x => x.UserId == id && x.Status == "Inactive")
                 .Sort(Builders<SessionModel>.Sort.Ascending(r => r.EndTime))
                 .ToListAsync();
         }
 
         private void DeleteSessions(string idUser)
         {
-            _sessionCollection.DeleteOneAsync(x => x.Id == idUser);
+            _context.Sessions.DeleteOneAsync(x => x.Id == idUser);
         }
     }
 }

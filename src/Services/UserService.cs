@@ -50,5 +50,10 @@ namespace FrameworkDriver_Api.src.Services
         {
             return await _user.DeleteAsync(id);
         }
+
+        public async Task<bool> SaveTheme(string idUser, string theme)
+        {
+            return await _user.SaveTheme(idUser, theme);
+        }
     }
 }

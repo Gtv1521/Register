@@ -12,22 +12,23 @@ namespace FrameworkDriver_Api.src.Repositories
 {
     public class CompanyRepository : IAddFilter<CompanyModel, CompanyModel>
     {
-        private readonly IMongoCollection<CompanyModel> _companies;
-        
+        private readonly Context _context;
+
         public CompanyRepository(Context context)
         {
-            _companies = context.GetCollection<CompanyModel>("Companies");
+            _context = context;
         }
 
         public async Task<string> CreateAsync(CompanyModel item)
         {
-            return await _companies.InsertOneAsync(item).ContinueWith(task => item.Id);
+            await _context.Companies.InsertOneAsync(item);
+            return item.Id;
         }
 
         public async Task<bool> DeleteAsync(string id)
         {
-            return await _companies.DeleteOneAsync(company => company.Id == id)
-                .ContinueWith(task => task.Result.DeletedCount > 0);
+            var result = await _context.Companies.DeleteOneAsync(company => company.Id == id);
+            return result.DeletedCount > 0;
         }
 
         public async Task<IEnumerable<CompanyModel>> FilterData(string text)
@@ -35,12 +36,12 @@ namespace FrameworkDriver_Api.src.Repositories
             var regular = new BsonRegularExpression(text, "i");
 
             var filter = Builders<CompanyModel>.Filter.Regex(x => x.Email, regular);
-            return await _companies.Find(filter).ToListAsync();
+            return await _context.Companies.Find(filter).ToListAsync();
         }
 
         public async Task<IEnumerable<CompanyModel>> GetAllAsync(int pageNumber, int pageSize, string? idCompany = null)
         {
-            return await _companies.Find(_ => true)
+            return await _context.Companies.Find(_ => true)
             .Skip((pageNumber - 1) * pageSize)
             .Limit(pageSize)
             .ToListAsync();
@@ -48,8 +49,7 @@ namespace FrameworkDriver_Api.src.Repositories
 
         public async Task<CompanyModel> GetByIdAsync(string id)
         {
-            return await _companies.FindAsync(company => company.Id == id)
-                .ContinueWith(task => task.Result.FirstOrDefault());
+            return await _context.Companies.FindAsync(company => company.Id == id).Result.FirstOrDefaultAsync();
         }
 
         public async Task<bool> UpdateAsync(string id, CompanyModel item)
@@ -63,7 +63,7 @@ namespace FrameworkDriver_Api.src.Repositories
                 .Set(c => c.Address, item.Address)
                 .Set(c => c.NIT, item.NIT);
 
-            var result = await _companies.UpdateOneAsync(filter, update);
+            var result = await _context.Companies.UpdateOneAsync(filter, update);
             return result.ModifiedCount > 0;
         }
     }

@@ -40,8 +40,13 @@ namespace FrameworkDriver_Api.src.Controllers
             if (!ModelState.IsValid) BadRequest(ModelState.Values);
             try
             {
-                var isDevelopment = _env.IsDevelopment();
-                var (data, token) = await _sessionService.LogIn(login.Email, login.Password);
+                var navData = new NavDataDto {
+                    Navegador = login.Navegador,
+                    VersionNavegador = login.VersionNavegador,
+                    SistemaOperativo = login.SistemaOperativo
+                };
+
+                var (data, token, theme) = await _sessionService.LogIn(login.Email, login.Password, navData);
                 _logger.LogInformation("User logged in successfully: {UserId}", data.UserId);
 
 
@@ -79,6 +84,7 @@ namespace FrameworkDriver_Api.src.Controllers
                     idUser = data.UserId,
                     idSession = data.Id,
                     idCompany = data.IdCompany,
+                    theme
                 });
             }
             catch (UnauthorizedAccessException uaEx)

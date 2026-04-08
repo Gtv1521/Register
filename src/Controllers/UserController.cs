@@ -185,5 +185,20 @@ namespace FrameworkDriver_Api.src.Controllers
             if (!deleted) return NotFound("User not found");
             return NoContent();
         }
+
+        [HttpPost("saveTheme")]
+        public async Task<IActionResult> SaveTheme([FromBody] SaveThemeRequest request)
+        {
+            try
+            {
+                var result = await _userService.SaveTheme(request.IdUser, request.Theme);
+                return Ok(new { success = true, message = "Tema guardado exitosamente" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error saving theme");
+                return StatusCode(500, new { success = false, message = "Error interno del servidor" });
+            }
+        }
     }
 }

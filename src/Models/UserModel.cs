@@ -21,6 +21,7 @@ namespace FrameworkDriver_Api.src.Models
         [BsonRepresentation(BsonType.ObjectId)]
         public string IdCompany { get; set; } = string.Empty;
         public Role Rol { get; set; }
+        public string Theme { get; set; } = "light";
     }
 
 

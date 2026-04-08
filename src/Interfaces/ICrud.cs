@@ -50,15 +50,18 @@ namespace FrameworkDriver_Api.src.Interfaces
     { }
 
     public interface ICrudWithLoad<T> : ICrud<T>, ILoadMail<T>
-    { }
+    {
+        Task<bool> SaveTheme(string idUser, string theme); // guarda el tema seleccionado por el usuario
+
+    }
 
     public interface IAddFilter<T, P> : ICrud<T>, IFilter<P>
-    {}
+    { }
 
     public interface IFilter<T>
     {
         Task<IEnumerable<T>> FilterData(string text);
-        
+
     }
 
     public interface IRegisters<T, P, R> : IReadOne<T>, IReadAll<R>, IFilter<P>, ICreate<T>, IUpdate<T>, IDelete
