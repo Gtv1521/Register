@@ -5,12 +5,14 @@ using System.Threading.Tasks;
 using FrameworkDriver_Api.src.Dto;
 using FrameworkDriver_Api.src.Interfaces;
 using FrameworkDriver_Api.src.Models;
+using FrameworkDriver_Api.src.Utils;
 
 namespace FrameworkDriver_Api.src.Services
 {
     public class UserService
     {
         private readonly ICrudWithLoad<UserModel> _user;
+
         public UserService(ICrudWithLoad<UserModel> user)
         {
             _user = user;
@@ -18,11 +20,11 @@ namespace FrameworkDriver_Api.src.Services
 
         public async Task<string> CreateUserAsync(UserDto user)
         {
-            return await _user.CreateAsync(new UserModel 
-            { 
-                Name = user.Name, 
-                Email = user.Email, 
-                Password = user.Password,
+            return await _user.CreateAsync(new UserModel
+            {
+                Name = user.Name,
+                Email = user.Email,
+                Password = Argon2Hasher.Hash(user.Password),
                 IdCompany = user.IdCompany,
                 Rol = user.Rol
             });
@@ -38,11 +40,11 @@ namespace FrameworkDriver_Api.src.Services
 
         public async Task<bool> UpdateUserAsync(string id, UserDto user)
         {
-            return await _user.UpdateAsync(id, new UserModel 
-            { 
-                Name = user.Name, 
-                Email = user.Email, 
-                Password = user.Password,
+            return await _user.UpdateAsync(id, new UserModel
+            {
+                Name = user.Name,
+                Email = user.Email,
+                Password = Argon2Hasher.Hash(user.Password),
                 Rol = user.Rol
             });
         }
