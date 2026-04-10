@@ -67,7 +67,7 @@ namespace FrameworkDriver_Api.src.Controllers
                 }
                 var userId = await _userService.CreateUserAsync(user);
                 _logger.LogInformation("User created with ID: {UserId}", userId);
-                return CreatedAtAction(nameof(GetUserById), new { id = userId }, userId);
+                return CreatedAtAction(nameof(GetUserById), new { id = userId }, new { id = userId });
 
             }
             catch (System.Exception ex)
