@@ -18,6 +18,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using MongoDB.Driver;
 using Scalar.AspNetCore;
+using QuestPDF.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -227,5 +228,5 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
-
+QuestPDF.Settings.License = LicenseType.Community;
 app.Run();
