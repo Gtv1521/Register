@@ -67,6 +67,12 @@ namespace FrameworkDriver_Api.src.Controllers
             var result = await _registerService.UpdateRegisterAsync(id, register);
             return Ok(result);
         }
+        [HttpPost("{id}")]
+        public async Task<IActionResult> GeneratePDF (string id, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10 )
+        {
+            var result = await _registerService.GeneratePDFAsync(id, pageNumber, pageSize);
+            return File(result, "application/pdf", $"test_{id}.pdf");
+        }
 
     }
 }
