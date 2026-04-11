@@ -13,6 +13,7 @@ using Isopoh.Cryptography.Argon2;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.VisualBasic;
 
 namespace FrameworkDriver_Api.src.Controllers
 {
@@ -40,7 +41,8 @@ namespace FrameworkDriver_Api.src.Controllers
             if (!ModelState.IsValid) BadRequest(ModelState.Values);
             try
             {
-                var navData = new NavDataDto {
+                var navData = new NavDataDto
+                {
                     Navegador = login.Navegador,
                     VersionNavegador = login.VersionNavegador,
                     SistemaOperativo = login.SistemaOperativo
@@ -50,8 +52,9 @@ namespace FrameworkDriver_Api.src.Controllers
                 _logger.LogInformation("User logged in successfully: {UserId}", data.UserId);
 
 
+
                 // Access Token (corto plazo - 15-60 minutos)
-                Response.Cookies.Append("access_token", token, new CookieOptions
+                var cookieOptions = new CookieOptions
                 {
                     HttpOnly = true,
                     Secure = true,
@@ -60,19 +63,14 @@ namespace FrameworkDriver_Api.src.Controllers
                     Path = "/",
                     Domain = null,
                     IsEssential = true
-                });
+                };
+
+                Response.Cookies.Append("access_token", token, cookieOptions);
 
                 // Refresh Token (largo plazo - almacenado en DB)
-                Response.Cookies.Append("refresh_token", data.Token, new CookieOptions
-                {
-                    HttpOnly = true,
-                    Secure = true,
-                    SameSite = SameSiteMode.None,
-                    Expires = DateTime.UtcNow.AddDays(7), // Reducir a 7 días máximo
-                    Path = "/",
-                    Domain = null,
-                    IsEssential = true
-                });
+                Response.Cookies.Append("refresh_token", data.Token, cookieOptions);
+                Response.Cookies.Append("X-Has-Session", "true", cookieOptions);
+
 
                 // Headers de seguridad adicionales
                 Response.Headers.Append("X-Content-Type-Options", "nosniff");
@@ -184,20 +182,7 @@ namespace FrameworkDriver_Api.src.Controllers
                     Rol = user.Rol
                 });
 
-                // Access Token (corto plazo - 15-60 minutos)
-                Response.Cookies.Append("access_token", token, new CookieOptions
-                {
-                    HttpOnly = true,
-                    Secure = true,
-                    SameSite = SameSiteMode.None,
-                    Expires = DateTime.UtcNow.AddHours(1), // Reducir a 15 minutos
-                    Path = "/",
-                    Domain = null,
-                    IsEssential = true
-                });
-
-                // Refresh Token (largo plazo - almacenado en DB)
-                Response.Cookies.Append("refresh_token", data.Token, new CookieOptions
+                var cookieOptions = new CookieOptions
                 {
                     HttpOnly = true,
                     Secure = true,
@@ -206,7 +191,13 @@ namespace FrameworkDriver_Api.src.Controllers
                     Path = "/",
                     Domain = null,
                     IsEssential = true
-                });
+                };
+
+
+                // Access Token (corto plazo - 15-60 minutos)
+                Response.Cookies.Append("access_token", token, cookieOptions);
+                Response.Cookies.Append("refresh_token", data.Token, cookieOptions);
+                Response.Cookies.Append("X-Has-Session", "true", cookieOptions);
 
                 // Headers de seguridad adicionales
                 Response.Headers.Append("X-Content-Type-Options", "nosniff");
@@ -385,14 +376,39 @@ namespace FrameworkDriver_Api.src.Controllers
             {
                 HttpOnly = true,
                 Secure = true,
-                SameSite = _env.IsDevelopment() ? SameSiteMode.None : SameSiteMode.Strict,
+                SameSite = SameSiteMode.None,
                 Expires = DateTime.UtcNow.AddDays(-1),
-                Path = "/"
+                Path = "/",
+                Domain = null,
+                IsEssential = true,
             };
 
             Response.Cookies.Delete("access_token", cookieOptions);
+            Response.Cookies.Delete("X-Has-Session", cookieOptions);
             Response.Cookies.Delete("refresh_token", cookieOptions);
             Response.Cookies.Delete("session_active", cookieOptions);
         }
+
+        [HttpGet("invitado")]
+        public async Task<IActionResult> GetGuestToken()
+        {
+            var token = await _sessionService.TokenInvitado();
+            var cookieOptions = new CookieOptions
+            {
+                 HttpOnly = true,
+                    Secure = true,
+                    SameSite = SameSiteMode.None,
+                    Expires = DateTime.UtcNow.AddMinutes(5), // Reducir a 7 días máximo
+                    Path = "/",
+                    Domain = null,
+                    IsEssential = true
+            };
+
+            Response.Cookies.Append("access_token", token, cookieOptions);
+            Response.Cookies.Append("X-Has-Session", "true", cookieOptions);
+
+            return Ok(new { message = "Acceso temporal concedido" });
+        }
+
     }
 }

@@ -36,7 +36,6 @@ namespace FrameworkDriver_Api.src.Controllers
         }
 
         [HttpGet]
-        [AllowAnonymous] // entrada a anonima
         public async Task<IActionResult> GetAllRegisters([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10, [FromQuery] string? idCompany = null)
         {
             if(idCompany == null) return BadRequest("El idCompany es requerido");
@@ -45,7 +44,6 @@ namespace FrameworkDriver_Api.src.Controllers
         }
 
         [HttpGet("{id}")]
-        [AllowAnonymous]
         public async Task<IActionResult> GetRegisterById(string id)
         {
             var result = await _registerService.GetRegisterByIdAsync(id);
@@ -67,7 +65,7 @@ namespace FrameworkDriver_Api.src.Controllers
             var result = await _registerService.UpdateRegisterAsync(id, register);
             return Ok(result);
         }
-        [HttpPost("{id}")]
+        [HttpGet("pdf/{id}")]
         public async Task<IActionResult> GeneratePDF (string id, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10 )
         {
             var result = await _registerService.GeneratePDFAsync(id, pageNumber, pageSize);

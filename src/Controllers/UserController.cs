@@ -186,6 +186,21 @@ namespace FrameworkDriver_Api.src.Controllers
             return NoContent();
         }
 
+        [HttpGet("{id}")]
+        public async Task<IActionResult> Usuario(string id)
+        {
+            try
+            {
+                var result = await _userService.GetUserByIdAsync(id);
+                if (result == null) return NotFound("No se encontro el usuario");
+                return Ok(result);
+            }
+            catch (System.Exception ex)
+            {
+                return Problem("Error servidor ", "user/id", 500, ex.Message);
+            }
+        }
+
         [HttpPost("saveTheme")]
         public async Task<IActionResult> SaveTheme([FromBody] SaveThemeRequest request)
         {

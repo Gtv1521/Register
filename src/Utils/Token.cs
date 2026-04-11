@@ -23,19 +23,10 @@ namespace FrameworkDriver_Api.src.Utils
         }
 
         //  se crea token JWT 
-        public async Task<string> GenerateToken(UserModel user, int timeInHours)
+        public async Task<string> GenerateToken(UserModel user, int timeInHours, string tipoUser)
         {
             if (user == null) throw new ArgumentNullException(nameof(user));
-            var claims = new[]
-            {
-                new Claim(ClaimTypes.Name, user.Name),
-                new Claim(ClaimTypes.Role, user.Rol.ToString()),
-                new Claim(ClaimTypes.Email, user.Email),
-                new Claim(ClaimTypes.NameIdentifier, user.Id),
-                new Claim(JwtRegisteredClaimNames.Sub, user.Email),
-                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                new Claim(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64)
-            };
+
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
@@ -43,9 +34,9 @@ namespace FrameworkDriver_Api.src.Utils
             {
                 Issuer = _configuration["Jwt:Issuer"],
                 Audience = _configuration["Jwt:Audience"]!,
-                Subject = new ClaimsIdentity(claims),
+                Subject = new ClaimsIdentity(DataClaims(user, tipoUser)),
                 NotBefore = DateTime.UtcNow,
-                Expires = DateTime.UtcNow.AddHours(timeInHours),
+                Expires = DateTime.UtcNow.AddMinutes(timeInHours),
                 SigningCredentials = creds
             };
 
@@ -73,6 +64,32 @@ namespace FrameworkDriver_Api.src.Utils
         public void Revoke(string jti, DateTime expiration)
         {
             _revokedTokens.TryAdd(jti, expiration);
+        }
+
+        public List<Claim> DataClaims(UserModel data, string tipo)
+        {
+
+            if (tipo == "invitado")
+            {
+                return new List<Claim>
+                {
+                    new Claim(ClaimTypes.Role, "Invitado"),
+                    new Claim("TipoAcceso", "QR-Temporal")
+                };
+            }
+            else
+            {
+                return new List<Claim>
+                {
+                    new Claim(ClaimTypes.Name, data.Name),
+                    new Claim(ClaimTypes.Role, data.Rol.ToString()),
+                    new Claim(ClaimTypes.Email, data.Email),
+                    new Claim(ClaimTypes.NameIdentifier, data.Id),
+                    new Claim(JwtRegisteredClaimNames.Sub, data.Email),
+                    new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                    new Claim(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64)
+                };
+            }
         }
     }
 }

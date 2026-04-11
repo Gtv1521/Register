@@ -56,7 +56,7 @@ namespace FrameworkDriver_Api.src.Services
             if (user != null)
             {
                 var tokenRefresh = await _tokenService.GenerateRefreshToken(user.Id);
-                var AccesToken = await _tokenService.GenerateToken(user, 1); // Token valido por 1 hora
+                var AccesToken = await _tokenService.GenerateToken(user, 60, "user"); // Token valido por 1 hora
                 var session = new SessionModel
                 {
                     UserId = user.Id,
@@ -107,7 +107,7 @@ namespace FrameworkDriver_Api.src.Services
 
             // se crea tokens
             var tokenRefresh = await _tokenService.GenerateRefreshToken(response);
-            var AccesToken = await _tokenService.GenerateToken(user, 1); // Token valido por 1 hora
+            var AccesToken = await _tokenService.GenerateToken(user, 60, "user"); // Token valido por 1 hora
 
             var emailTask = _email.EnviarEmailAsync(
                 user.Email,
@@ -157,7 +157,7 @@ namespace FrameworkDriver_Api.src.Services
         {
             var user = await _userRepository.GetByIdAsync(idUser);
             var tokenNew = await _tokenService.GenerateRefreshToken(idUser);
-            var tokenSistem = await _tokenService.GenerateToken(user, 1);
+            var tokenSistem = await _tokenService.GenerateToken(user, 60, "user");
             var response = await _sessionRepository.UpdateTokenRefresh(tokenAntiguo, tokenNew, idUser);
             if (response != false) return (tokenNew, tokenSistem);
             throw new FailedException("Fallo actualizacion de token");
@@ -166,6 +166,11 @@ namespace FrameworkDriver_Api.src.Services
         public async Task<IEnumerable<SessionModel>> OpenSessions(string idUser)
         {
             return await _sessionRepository.OpenSessions(idUser);
+        }
+
+        public async Task<string> TokenInvitado()
+        {
+            return await _tokenService.GenerateToken(new UserModel { }, 5, "invitado");
         }
     }
 }
