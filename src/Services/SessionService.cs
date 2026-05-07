@@ -9,9 +9,13 @@ using FrameworkDriver_Api.src.Dto;
 using FrameworkDriver_Api.src.Exceptions;
 using FrameworkDriver_Api.src.Interfaces;
 using FrameworkDriver_Api.src.Models;
+using FrameworkDriver_Api.src.SignalR;
 using FrameworkDriver_Api.src.Utils;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.IdentityModel.Tokens;
+using SixLabors.ImageSharp.Drawing.Processing;
+using ZstdSharp.Unsafe;
 
 namespace FrameworkDriver_Api.src.Services
 {
@@ -20,12 +24,16 @@ namespace FrameworkDriver_Api.src.Services
         private readonly IToken<UserModel> _tokenService;
         private readonly ICrudWithLoad<UserModel> _userRepository;
         private readonly ISession<SessionModel> _sessionRepository;
+        private readonly ILogger<SessionService> _logger;
+        private readonly IHubContext<ReparacionHub> _hub;
         private readonly EmailService _email;
         public SessionService(
             IToken<UserModel> tokenService,
             ICrudWithLoad<UserModel> userRepository,
             ISession<SessionModel> sessionRepository,
-            EmailService email
+            EmailService email,
+            ILogger<SessionService> logger,
+            IHubContext<ReparacionHub> hub
 
             )
         {
@@ -33,6 +41,8 @@ namespace FrameworkDriver_Api.src.Services
             _userRepository = userRepository;
             _sessionRepository = sessionRepository;
             _email = email;
+            _hub = hub;
+            _logger = logger;
         }
 
         // Inicia sesion
@@ -56,7 +66,7 @@ namespace FrameworkDriver_Api.src.Services
             if (user != null)
             {
                 var tokenRefresh = await _tokenService.GenerateRefreshToken(user.Id);
-                var AccesToken = await _tokenService.GenerateToken(user, 60, "user"); // Token valido por 1 hora
+                var AccesToken = await _tokenService.GenerateToken(user, 2, "user"); // Token valido por 2 minutos
                 var session = new SessionModel
                 {
                     UserId = user.Id,
@@ -86,6 +96,15 @@ namespace FrameworkDriver_Api.src.Services
         {
             return await _sessionRepository.LogOut(sessionId);
         }
+
+        public async Task<bool> DeleteSessions(string sessionid, string id)
+        {
+            var response = await LogOut(sessionid);
+            if (response) await _hub.Clients.User(id).SendAsync("SesionRevoked", sessionid);
+            _logger.LogInformation($"Sesión {sessionid} revocada para el usuario {id}");
+            return response;
+        }
+
         // verifica si la sesion esta activa
         public async Task<bool> IsSessionActive(string sessionId)
         {
@@ -93,7 +112,7 @@ namespace FrameworkDriver_Api.src.Services
         }
 
         // Crea un usuario y una sesion
-        public async Task<(SessionModel data, string Token)> SignIn(UserModel user)
+        public async Task<(SessionModel data, string Token)> SignIn(UserModel user, NavDataDto navData)
         {
             var hash = Argon2Hasher.Hash(user.Password);
             var response = await _userRepository.CreateAsync(new UserModel
@@ -104,10 +123,12 @@ namespace FrameworkDriver_Api.src.Services
                 IdCompany = user.IdCompany,
                 Rol = user.Rol
             });
+            //  se le asigna el nuevo id a los datos para iniciar sesion 
+            user.Id = response;
 
             // se crea tokens
             var tokenRefresh = await _tokenService.GenerateRefreshToken(response);
-            var AccesToken = await _tokenService.GenerateToken(user, 60, "user"); // Token valido por 1 hora
+            var AccesToken = await _tokenService.GenerateToken(user, 2, "user"); // Token valido por 1 hora
 
             var emailTask = _email.EnviarEmailAsync(
                 user.Email,
@@ -115,7 +136,7 @@ namespace FrameworkDriver_Api.src.Services
                 $@"<h1>{user.Name}</h1>
                 <br>
                 <article>
-                Hola, Bienvenido !!! <br>
+                Hola, Te damos la bienvenida !!! <br>
                 Este es el medio de comunicacion con el cliente donde se le
                 notifica novedades de lo que pasa con el servio que se le brinda.
                 </article>
@@ -129,7 +150,11 @@ namespace FrameworkDriver_Api.src.Services
                 UserId = response,
                 StartTime = DateTime.UtcNow,
                 Status = "Active",
-                Token = tokenRefresh
+                Token = tokenRefresh,
+                IdCompany = user.IdCompany,
+                Navegador = navData.Navegador ?? "Desconocido",
+                VersionNavegador = navData.VersionNavegador ?? "Desconocida",
+                SistemaOperativo = navData.SistemaOperativo ?? "Desconocido"
             });
 
             if (string.IsNullOrEmpty(responseSession.Id))
@@ -157,7 +182,7 @@ namespace FrameworkDriver_Api.src.Services
         {
             var user = await _userRepository.GetByIdAsync(idUser);
             var tokenNew = await _tokenService.GenerateRefreshToken(idUser);
-            var tokenSistem = await _tokenService.GenerateToken(user, 60, "user");
+            var tokenSistem = await _tokenService.GenerateToken(user, 2, "user");
             var response = await _sessionRepository.UpdateTokenRefresh(tokenAntiguo, tokenNew, idUser);
             if (response != false) return (tokenNew, tokenSistem);
             throw new FailedException("Fallo actualizacion de token");

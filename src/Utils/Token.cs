@@ -84,6 +84,7 @@ namespace FrameworkDriver_Api.src.Utils
                     new Claim(ClaimTypes.Name, data.Name),
                     new Claim(ClaimTypes.Role, data.Rol.ToString()),
                     new Claim(ClaimTypes.Email, data.Email),
+                    new Claim("EmpresaId", data.IdCompany.ToString()),
                     new Claim(ClaimTypes.NameIdentifier, data.Id),
                     new Claim(JwtRegisteredClaimNames.Sub, data.Email),
                     new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using MongoDB.Driver;
 
 namespace FrameworkDriver_Api.src.Interfaces
 {
@@ -64,11 +65,15 @@ namespace FrameworkDriver_Api.src.Interfaces
 
     }
 
-    public interface IRegisters<T, P, R> : IReadOne<T>, IReadAll<R>, IFilter<P>, ICreate<T>, IUpdate<T>, IDelete
+    public interface IRegisters<T, R> : IReadOne<T>, IReadAll<R>, ICreate<T>, IUpdate<T>, IDelete
     {
         Task<string> GetNextRegistroNumberAsync();
+        Task<R> GetOneMasObservation(string id);
+        Task<IEnumerable<R>> FilterData(string? search, string idCompany, int page, int size);
     }
 
     public interface ILoadAllId<T> : ICrud<T>, IReadAllId<T>
-    { }
+    {
+        Task<bool> DeleteManyAsync(string id);
+    }
 }

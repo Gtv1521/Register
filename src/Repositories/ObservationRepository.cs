@@ -30,6 +30,12 @@ namespace FrameworkDriver_Api.src.Repositories
             return delete.DeletedCount > 0;
         }
 
+        public async Task<bool> DeleteManyAsync(string id)
+        {
+            var delete = await _context.Observations.DeleteManyAsync(x => x.IdRegister == id);
+            return delete.DeletedCount > 0;
+        }
+
         public async Task<IEnumerable<ObservationModel>> GetAllAsync(int pageNumber, int pageSize, string? idCompany = null)
         {
             return await _context.Observations.Find(_ => true)

@@ -5,9 +5,11 @@ using FrameworkDriver_Api.src.Dto;
 using FrameworkDriver_Api.src.Interfaces;
 using FrameworkDriver_Api.src.Models;
 using FrameworkDriver_Api.src.Projections;
+using FrameworkDriver_Api.src.SignalR;
 using FrameworkDriver_Api.src.Utils;
 using FrameworkDriver_Api.src.Utils.Interfaces;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.SignalR;
 
 namespace FrameworkDriver_Api.src.Services
 {
@@ -16,8 +18,9 @@ namespace FrameworkDriver_Api.src.Services
         private readonly ILoadAllId<ObservationModel> _observation;
         private readonly FileUpload _fileUpload;
         private readonly ILogger<ObservationService> _logger;
+        private readonly IHubContext<ReparacionHub> _hubContext;
         private readonly WhatsappInterface _wh;
-        private readonly IRegisters<RegisterModel, ListRegistersProjection, RegisterObsCliProjection> _register;
+        private readonly IRegisters<RegisterModel, RegisterObsCliProjection> _register;
         private readonly IAddFilter<ClientModel, ClientModel> _client;
         private readonly EmailService _emailService;
 
@@ -25,8 +28,9 @@ namespace FrameworkDriver_Api.src.Services
             ILoadAllId<ObservationModel> observation,
             FileUpload file,
             ILogger<ObservationService> logger,
+            IHubContext<ReparacionHub> hubContext,
             WhatsappInterface whatsapp,
-            IRegisters<RegisterModel, ListRegistersProjection, RegisterObsCliProjection> register,
+            IRegisters<RegisterModel, RegisterObsCliProjection> register,
             IAddFilter<ClientModel, ClientModel> client,
             EmailService emailService
             )
@@ -38,6 +42,7 @@ namespace FrameworkDriver_Api.src.Services
             _register = register;
             _emailService = emailService;
             _client = client;
+            _hubContext = hubContext;
         }
 
         public async Task<string> CreateObservationAsync(ObservationDTO observation)
@@ -128,8 +133,8 @@ namespace FrameworkDriver_Api.src.Services
                     await _wh.SendMenssageAsync(mensajeWhatsapp, client.Phone, FileData);
                 }
 
-                //  retorna un id de objeto creado
-                var result = await _observation.CreateAsync(new ObservationModel
+
+                var data = new ObservationModel
                 {
                     IdRegister = observation.IdRegister,
                     Type = observation.Type,
@@ -137,11 +142,15 @@ namespace FrameworkDriver_Api.src.Services
                     CreatedAt = DateTime.Now,
                     IdUser = observation.IdUser,
                     Photos = FileData,
-                });
+                };
+                //  retorna un id de objeto creado
+                var result = await _observation.CreateAsync(data);
 
+                data.Id = result; // Asignamos el ID generado al modelo de observación
                 // se actualiza el estado del registro dependiendo del tipo de observacion creada
                 var response = await UpdateRegisterStatus(register, observation.Type);
-
+                if (response) await _hubContext.Clients.Group(register.IdCompany).SendAsync("RegistroActualizado", register.Id);
+                await _hubContext.Clients.Group(register.IdCompany).SendAsync("ObservacionCreada", data);
                 return result;
 
             }
@@ -153,6 +162,11 @@ namespace FrameworkDriver_Api.src.Services
         }
         // 
         public async Task<ObservationModel> GetClientByIdAsync(string id)
+        {
+            return await _observation.GetByIdAsync(id);
+        }
+
+        public async Task<ObservationModel> GetByIdAsync(string id)
         {
             return await _observation.GetByIdAsync(id);
         }
@@ -254,6 +268,39 @@ namespace FrameworkDriver_Api.src.Services
 
         }
 
+        public async Task<bool> DeleteXId(string id, string empresaId)
+        {
+            var images = await _observation.GetByIdAsync(id);
+            if (images.Photos.Count() > 0)
+            {
+                images.Photos.ForEach(async x =>
+                {
+                    if (await _fileUpload.DeleteMedia(x.Id) == false) _logger.LogInformation("Error al borrar el recurso de cloudinary" + x.Id);
+                    else _logger.LogInformation("Recurso de cloudinary eliminado correctamente: " + x.Id);
+                });
+            }
+
+            var delete = await _observation.DeleteAsync(id);
+            if (delete) await _hubContext.Clients.Groups(empresaId).SendAsync("ObservacionEliminada", id);
+            _logger.LogInformation($"Observacion con id {id} eliminada: {delete}");
+            return delete;
+        }
+
+        public async Task<bool> DeleteXRegister(string idRegister)
+        {
+            var images = await _observation.GetAllIdAsync(idRegister, 1, int.MaxValue);
+            images.ToList().ForEach(async x =>
+            {
+                if (x.Photos.Count() > 0)
+                {
+                    x.Photos.ForEach(async p =>
+                    {
+                        if (await _fileUpload.DeleteMedia(p.Id) == false) _logger.LogInformation("Error al borrar el recurso de cloudinary" + p.Id);
+                    });
+                }
+            });
+            return await _observation.DeleteManyAsync(idRegister);
+        }
         private async Task<bool> UpdateRegisterStatus(RegisterModel register, ObservationType newStatus)
         {
             register.StatusRegister = newStatus switch
@@ -266,7 +313,10 @@ namespace FrameworkDriver_Api.src.Services
 
                 _ => register.StatusRegister // Si no coincide, mantenemos el estado actual
             };
-            return await _register.UpdateAsync(register.Id, register);
+            var response = await _register.UpdateAsync(register.Id, register);
+            await _hubContext.Clients.Group(register.IdCompany).SendAsync("RegistroActualizado", new { Id = register.Id, StatusRegister = register.StatusRegister as Status? });
+            return response;
         }
+
     }
 }

@@ -2,9 +2,13 @@ using FrameworkDriver_Api.Models;
 using FrameworkDriver_Api.src.Dto;
 using FrameworkDriver_Api.src.Interfaces;
 using FrameworkDriver_Api.src.Projections;
+using FrameworkDriver_Api.src.SignalR;
+using FrameworkDriver_Api.src.Utils;
 using IronPdf;
 using Microsoft.AspNetCore.Routing.Tree;
+using Microsoft.AspNetCore.SignalR;
 using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Serializers;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
@@ -14,38 +18,50 @@ namespace FrameworkDriver_Api.src.Services
 {
     public class RegisterService
     {
-        private readonly IRegisters<RegisterModel, ListRegistersProjection, RegisterObsCliProjection> _registerRepository;
+        private readonly IRegisters<RegisterModel, RegisterObsCliProjection> _registerRepository;
         private readonly ILoadAllId<ObservationModel> _observation;
+        private readonly UserService _userService;
+        private readonly IHubContext<ReparacionHub> _hubContext;
         private readonly IAddFilter<CompanyModel, CompanyModel> _company;
         private readonly QrInterface _qrService;
+        private readonly FileUpload _cloudinary;
         private readonly IUpdateQr _qr;
         public RegisterService(
-            IRegisters<RegisterModel, ListRegistersProjection, RegisterObsCliProjection> registerRepository,
+            IRegisters<RegisterModel, RegisterObsCliProjection> registerRepository,
             QrInterface qrService,
+            IHubContext<ReparacionHub> hubContext,
             IUpdateQr qr,
+            UserService userService,
             ILoadAllId<ObservationModel> observation,
+            FileUpload cloudinary,
             IAddFilter<CompanyModel, CompanyModel> company
             )
         {
             _registerRepository = registerRepository;
             _qrService = qrService;
+            _hubContext = hubContext;
             _qr = qr;
             _observation = observation;
             _company = company;
+            _cloudinary = cloudinary;
+            _userService = userService;
         }
 
         public async Task<string> AddRegisterAsync(RegisterDTO register)
         {
             var nextRegistroNumber = await _registerRepository.GetNextRegistroNumberAsync();
-            var result = await _registerRepository.CreateAsync(new RegisterModel
+            var registro = new RegisterModel
             {
                 IdClient = register.IdClient,
                 IdCompany = register.IdCompany,
                 IdUser = register.IdUser,
-                StatusRegister = register.StatusRegister,
+                Tecnico = await _userService.GetUserByIdAsync(register.IdUser).ContinueWith(t => t.Result?.Name ?? "Desconocido"),
                 RegistroNumber = nextRegistroNumber,
+                Antisipo = register.Antisipo,
+                TotalPagar = register.TotalPagar,
                 CreatedAt = DateTime.UtcNow, // Guardar en UTC
-            });
+            };
+            var result = await _registerRepository.CreateAsync(registro);
 
             var BaseUrl = $"{register.UrlRuta}/{result}";
 
@@ -65,9 +81,9 @@ namespace FrameworkDriver_Api.src.Services
         }
 
         // hace un filtro del cliente y sale una lista de observaciones 
-        public async Task<IEnumerable<ListRegistersProjection>> Filter(string filter)
+        public async Task<IEnumerable<RegisterObsCliProjection>> Filter(string filter, string idCompany, int page, int size)
         {
-            return await _registerRepository.FilterData(filter);
+            return await _registerRepository.FilterData(filter, idCompany, page, size);
         }
 
         public async Task<IEnumerable<RegisterObsCliProjection>> GetAllRegistersAsync(int pageNumber, int pageSize, string? idCompany = null)
@@ -85,9 +101,13 @@ namespace FrameworkDriver_Api.src.Services
             return await _registerRepository.UpdateAsync(id, register);
         }
 
-        public async Task<bool> DeleteRegisterAsync(string id)
+        public async Task<bool> DeleteRegisterAsync(string id, string empresaId)
         {
-            return await _registerRepository.DeleteAsync(id);
+            var observations = await _registerRepository.GetByIdAsync(id);
+            await _cloudinary.DeleteMedia(observations.IdQr, "QR"); // elimina image qr de ruta
+            var response = await _registerRepository.DeleteAsync(id);
+            if (response) await _hubContext.Clients.Group(empresaId).SendAsync("RegistroEliminado", id);
+            return response;
         }
 
         public async Task<byte[]> GeneratePDFAsync(string id, int page, int size)
@@ -180,7 +200,7 @@ namespace FrameworkDriver_Api.src.Services
                             });
                             row.RelativeItem().Column(column =>
                             {
-                                column.Item().Text(t => { t.Span("Fecha: ").SemiBold(); t.Span(register.CreatedAt.ToString("dd/MM/yyyy")); });
+                                column.Item().Text(t => { t.Span("Fecha: ").SemiBold(); t.Span(register.CreatedAt.ToString("dd/MM/yyyy HH:mm")); });
                             });
                         });
 
@@ -206,7 +226,7 @@ namespace FrameworkDriver_Api.src.Services
 
                             foreach (var obs in observations)
                             {
-                                table.Cell().Element(rowStyle).Text(obs.CreatedAt.ToString("yyyy-MM-dd"));
+                                table.Cell().Element(rowStyle).Text(obs.CreatedAt.ToString("yyyy-MM-dd HH:mm"));
                                 table.Cell().Element(rowStyle).Text(obs.Description ?? "Sin descripción");
 
                                 // Celda de Fotos
@@ -221,7 +241,7 @@ namespace FrameworkDriver_Api.src.Services
                                                 colFotos.Item().PaddingBottom(5).MaxWidth(60).Hyperlink(p.Photo).Column(c =>
                                                 {
                                                     c.Item().Image(b);
-                                        
+
                                                     // Opcional: Agregar un texto pequeño que diga "Ver original" 
                                                     // para que el usuario sepa que es clicleable
                                                     c.Item().AlignCenter().Text("Ver original")

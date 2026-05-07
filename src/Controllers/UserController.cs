@@ -99,16 +99,17 @@ namespace FrameworkDriver_Api.src.Controllers
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             var email = User.FindFirst(ClaimTypes.Email)?.Value;
             var username = User.FindFirst(ClaimTypes.Name)?.Value;
-            var company = await _userService.GetUserByIdAsync(userId!);
+            var company = User.FindFirst("EmpresaId")?.Value;
             var rol = User.FindFirst(ClaimTypes.Role)?.Value;
 
+            if(string.IsNullOrEmpty(email)) return BadRequest("No hay usuario");
             return Ok(new
             {
                 id = userId,
                 email,
                 name = username,
                 rol,
-                idCompany = company.IdCompany,
+                idCompany = company,
             });
         }
 

@@ -59,7 +59,7 @@ namespace FrameworkDriver_Api.src.Controllers
                     HttpOnly = true,
                     Secure = true,
                     SameSite = SameSiteMode.None,
-                    Expires = DateTime.UtcNow.AddHours(1), // Reducir a 15 minutos
+                    Expires = DateTime.UtcNow.AddDays(30), // Reducir a 15 minutos
                     Path = "/",
                     Domain = null,
                     IsEssential = true
@@ -109,24 +109,27 @@ namespace FrameworkDriver_Api.src.Controllers
         [HttpPost("logout/{sessionId}")]
         public async Task<IActionResult> LogOut(string sessionId)
         {
+            if (string.IsNullOrEmpty(sessionId)) return BadRequest("El id de la session es obligatorio");
             try
             {
-                if (string.IsNullOrEmpty(sessionId)) return BadRequest("El id de la session es obligatorio");
                 var result = await _sessionService.LogOut(sessionId);
-
-                Response.Cookies.Delete("access_token", new CookieOptions
+                var cookieOptions = new CookieOptions
                 {
-                    Path = "/",
+                    HttpOnly = true,
                     Secure = true,
-                    SameSite = SameSiteMode.None
-                });
+                    SameSite = SameSiteMode.None,
+                    Expires = DateTime.UtcNow.AddDays(-1), // Eliminar la cookie
+                    Path = "/",
+                    Domain = null,
+                    IsEssential = true
+                };
 
-                Response.Cookies.Delete("refresh_token", new CookieOptions
-                {
-                    Path = "/",
-                    Secure = true,
-                    SameSite = SameSiteMode.None
-                });
+                Response.Cookies.Delete("access_token", cookieOptions);
+                Response.Cookies.Delete("refresh_token", cookieOptions);
+                Response.Cookies.Delete("X-Has-Session", cookieOptions);
+
+
+
 
                 return Ok(new { success = result });
             }
@@ -168,7 +171,7 @@ namespace FrameworkDriver_Api.src.Controllers
 
         [HttpPost("signin")]
         [Consumes("application/json", "multipart/form-data")]
-        public async Task<IActionResult> SignIn([FromBody] UserDto user)
+        public async Task<IActionResult> SignIn([FromBody] SiginRequestDto user)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState.Values.SelectMany(v => v.Errors));
             try
@@ -180,6 +183,12 @@ namespace FrameworkDriver_Api.src.Controllers
                     Password = user.Password,
                     IdCompany = user.IdCompany,
                     Rol = user.Rol
+                },
+                new NavDataDto
+                {
+                    Navegador = user.Data.Navegador,
+                    SistemaOperativo = user.Data.SistemaOperativo,
+                    VersionNavegador = user.Data.VersionNavegador
                 });
 
                 var cookieOptions = new CookieOptions
@@ -187,7 +196,7 @@ namespace FrameworkDriver_Api.src.Controllers
                     HttpOnly = true,
                     Secure = true,
                     SameSite = SameSiteMode.None,
-                    Expires = DateTime.UtcNow.AddDays(7), // Reducir a 7 días máximo
+                    Expires = DateTime.UtcNow.AddDays(30), // Reducir a 7 días máximo
                     Path = "/",
                     Domain = null,
                     IsEssential = true
@@ -229,12 +238,11 @@ namespace FrameworkDriver_Api.src.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex.Message, "Error during sign-in");
-                return StatusCode(500, "Internal server error");
+                return Problem(ex.Message, "Internal server error");
             }
         }
 
         [HttpPost("refresh")]
-        [AllowAnonymous]
         public async Task<IActionResult> UpdateTokenRefresh([FromBody] RefreshDto refreshDto)
         {
             var id = refreshDto.Id;
@@ -263,7 +271,7 @@ namespace FrameworkDriver_Api.src.Controllers
                 if (string.IsNullOrEmpty(refreshToken))
                 {
                     _logger.LogWarning("No refresh token found in cookies or headers");
-                    return Unauthorized(new
+                    return BadRequest(new
                     {
                         success = false,
                         message = "Refresh token no encontrado",
@@ -279,7 +287,7 @@ namespace FrameworkDriver_Api.src.Controllers
                 if (string.IsNullOrEmpty(token))
                 {
                     _logger.LogError("Failed to update refresh token in database");
-                    return StatusCode(500, new
+                    return BadRequest(new
                     {
                         success = false,
                         message = "Error al actualizar sesión",
@@ -288,34 +296,22 @@ namespace FrameworkDriver_Api.src.Controllers
                 }
 
 
-                // Access Token (corto plazo - 15-60 minutos)
-                Response.Cookies.Append("access_token", token, new CookieOptions
+                var cookieOptions = new CookieOptions
                 {
                     HttpOnly = true,
                     Secure = true,
                     SameSite = SameSiteMode.None,
-                    Expires = DateTime.UtcNow.AddSeconds(10), // Reducir a 15 minutos
+                    Expires = DateTime.UtcNow.AddDays(30), // Reducir a 7 días máximo
                     Path = "/",
                     Domain = null,
                     IsEssential = true
-                });
+                };
+
+                // Access Token (corto plazo - 15-60 minutos)
+                Response.Cookies.Append("access_token", token, cookieOptions);
 
                 // Refresh Token (largo plazo - almacenado en DB)
-                Response.Cookies.Append("refresh_token", refresh, new CookieOptions
-                {
-                    HttpOnly = true,
-                    Secure = true,
-                    SameSite = SameSiteMode.None,
-                    Expires = DateTime.UtcNow.AddDays(7), // Reducir a 7 días máximo
-                    Path = "/",
-                    Domain = null,
-                    IsEssential = true
-                });
-
-                // Headers de seguridad adicionales
-                Response.Headers.Append("X-Content-Type-Options", "nosniff");
-                Response.Headers.Append("X-Frame-Options", "DENY");
-                Response.Headers.Append("X-XSS-Protection", "1; mode=block");
+                Response.Cookies.Append("refresh_token", refresh, cookieOptions);
 
                 _logger.LogInformation("Tokens refreshed successfully for user: {UserId}", id);
 
@@ -324,7 +320,7 @@ namespace FrameworkDriver_Api.src.Controllers
                 {
                     success = true,
                     message = "Tokens refrescados exitosamente",
-                    expiresIn = "2 dias"  // en segundos
+                    expiresIn = "30 dias"  // en segundos
                 });
             }
             catch (SecurityTokenException stEx)
@@ -354,6 +350,21 @@ namespace FrameworkDriver_Api.src.Controllers
             }
         }
 
+        [HttpDelete("revoke/{sessionId}/{id}")]
+        public async Task<IActionResult> RevokeToken(string Id, string sessionId)
+        {
+            if (string.IsNullOrEmpty(sessionId)) return BadRequest("El id de la session es obligatorio");
+            try
+            {
+                var result = await _sessionService.DeleteSessions(sessionId, Id);
+                return Ok(new { success = result });
+            }
+            catch (System.Exception ex)
+            {
+                _logger.LogError(ex, "Error during token revocation");
+                return StatusCode(500, "Internal server error" + ex.Message);
+            }
+        }
 
         [HttpGet("verifyEmail/{email}")]
         public async Task<IActionResult> VerifyEmail(string email)
@@ -395,13 +406,13 @@ namespace FrameworkDriver_Api.src.Controllers
             var token = await _sessionService.TokenInvitado();
             var cookieOptions = new CookieOptions
             {
-                 HttpOnly = true,
-                    Secure = true,
-                    SameSite = SameSiteMode.None,
-                    Expires = DateTime.UtcNow.AddMinutes(5), // Reducir a 7 días máximo
-                    Path = "/",
-                    Domain = null,
-                    IsEssential = true
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.None,
+                Expires = DateTime.UtcNow.AddMinutes(5), // Reducir a 7 días máximo
+                Path = "/",
+                Domain = null,
+                IsEssential = true
             };
 
             Response.Cookies.Append("access_token", token, cookieOptions);

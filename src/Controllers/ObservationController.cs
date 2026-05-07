@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
+using System.Drawing;
 using System.Linq;
 using System.Threading.Tasks;
 using FrameworkDriver_Api.Models;
@@ -92,5 +93,25 @@ namespace FrameworkDriver_Api.src.Controllers
             }
         }
 
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteObservation(string id)
+        {
+            if (string.IsNullOrEmpty(id)) return BadRequest("El id no puede estar vacio");
+
+            try
+            {
+                var empresaId = User.FindFirst("EmpresaId")?.Value;
+                var images = await _observationService.GetByIdAsync(id);
+                var response = await _observationService.DeleteXId(id, empresaId!);
+                if (!response) return NotFound("No se encontro dato a eliminar");
+                return Ok(response);
+            }
+            catch (System.Exception ex)
+            {
+                _logger.LogInformation(ex.Message);
+                return Problem(ex.Message);
+            }
+        }
     }
 }

@@ -19,6 +19,7 @@ using Microsoft.OpenApi;
 using MongoDB.Driver;
 using Scalar.AspNetCore;
 using QuestPDF.Infrastructure;
+using FrameworkDriver_Api.src.SignalR;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -53,6 +54,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
         ValidateIssuer = true,
         ValidateAudience = true,
         ValidateLifetime = true,
+        ClockSkew = TimeSpan.Zero,
         ValidateIssuerSigningKey = true,
         ValidIssuer = builder.Configuration["Jwt:Issuer"],
         ValidAudience = builder.Configuration["Jwt:Audience"],
@@ -120,7 +122,7 @@ builder.Services.AddScoped<IToken<UserModel>, Token>();
 builder.Services.AddScoped<IAddFilter<ClientModel, ClientModel>, ClientRepository>();
 builder.Services.AddScoped<IAddFilter<CompanyModel, CompanyModel>, CompanyRepository>();
 builder.Services.AddScoped<ICrudWithLoad<UserModel>, UserRepository>();
-builder.Services.AddScoped<IRegisters<RegisterModel, ListRegistersProjection, RegisterObsCliProjection>, RegisterRepository>();
+builder.Services.AddScoped<IRegisters<RegisterModel, RegisterObsCliProjection>, RegisterRepository>();
 builder.Services.AddScoped<ILoadAllId<ObservationModel>, ObservationRepository>();
 builder.Services.AddScoped<ISession<SessionModel>, SessionRepository>();
 builder.Services.AddScoped<QrInterface, QrService>();
@@ -167,6 +169,7 @@ var allowedOrigins = new[] {
     "https://register.local:4200",
     "https://8x8d4rkv-4200.use2.devtunnels.ms",
     "https://8x8d4rkv-5272.use2.devtunnels.ms",
+    "https://8x8d4rkv-5000.use2.devtunnels.ms",
     "https://blog-notas-front.vercel.app", // produccion en vercel
     "http://172.19.0.2:4200",
     "http://localhost:3000",
@@ -185,6 +188,11 @@ builder.Services.AddCors(options =>
     });
 });
 
+builder.Services.AddSignalR().AddJsonProtocol(options =>
+{
+    options.PayloadSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+});
+
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
@@ -194,34 +202,36 @@ using (var scope = app.Services.CreateScope())
 }
 
 // Configure the HTTP request pipeline.
-// if (app.Environment.IsDevelopment())
-// {
-
-app.MapOpenApi();
-app.MapScalarApiReference(options =>
+if (app.Environment.IsDevelopment())
 {
-    options.WithTitle("Register-Api")
-       .WithClassicLayout()
-       .ForceDarkMode()
-       .HideSearch()
-       .ShowOperationId()
-       .ExpandAllTags()
-       .SortTagsAlphabetically()
-       .SortOperationsByMethod()
-       .AddPreferredSecuritySchemes("BearerAuth")
-       .PreserveSchemaPropertyOrder();
-    //    .WithProxy("https://api-gateway.company.com")
-    //    .AddServer("https://api.company.com", "Production")
-    //    .AddServer("https://staging-api.company.com", "Staging");
-});
 
-app.UseSwagger();
-app.UseSwaggerUI();
-// }
+    app.MapOpenApi();
+    app.MapScalarApiReference(options =>
+    {
+        options.WithTitle("Register-Api")
+           .WithClassicLayout()
+           .ForceDarkMode()
+           .HideSearch()
+           .ShowOperationId()
+           .ExpandAllTags()
+           .SortTagsAlphabetically()
+           .SortOperationsByMethod()
+           .AddPreferredSecuritySchemes("BearerAuth")
+           .PreserveSchemaPropertyOrder();
+        //    .WithProxy("https://api-gateway.company.com")
+        //    .AddServer("https://api.company.com", "Production")
+        //    .AddServer("https://staging-api.company.com", "Staging");
+    });
+
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 
 app.UseHttpsRedirection();
 
 app.UseCors("AllowFronts");
+
+app.MapHub<ReparacionHub>("/register");
 
 app.UseAuthentication();
 
