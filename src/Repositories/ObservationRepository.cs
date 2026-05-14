@@ -36,6 +36,22 @@ namespace FrameworkDriver_Api.src.Repositories
             return delete.DeletedCount > 0;
         }
 
+        public async Task<IEnumerable<ObservationModel>> FilterObs(string id, string filter)
+        {
+            var text = new BsonRegularExpression(filter, "i");
+
+            var filtro = Builders<ObservationModel>.Filter.And(
+                Builders<ObservationModel>.Filter.Eq(x => x.IdRegister, id),
+                Builders<ObservationModel>.Filter.Or(
+                    Builders<ObservationModel>.Filter.Regex(x => x.Description, text),
+                    Builders<ObservationModel>.Filter.Regex(x => x.Id, text),
+                    Builders<ObservationModel>.Filter.Regex(x => x.CreatedAt, text)
+                )
+            );
+
+            return await _context.Observations.FindAsync(filtro).Result.ToListAsync();
+        }
+
         public async Task<IEnumerable<ObservationModel>> GetAllAsync(int pageNumber, int pageSize, string? idCompany = null)
         {
             return await _context.Observations.Find(_ => true)

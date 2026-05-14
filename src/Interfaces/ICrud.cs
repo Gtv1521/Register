@@ -75,5 +75,6 @@ namespace FrameworkDriver_Api.src.Interfaces
     public interface ILoadAllId<T> : ICrud<T>, IReadAllId<T>
     {
         Task<bool> DeleteManyAsync(string id);
+        Task<IEnumerable<T>> FilterObs(string id, string filter);
     }
 }

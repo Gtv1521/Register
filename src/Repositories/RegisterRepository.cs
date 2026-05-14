@@ -12,6 +12,7 @@ using FrameworkDriver_Api.Models;
 using FrameworkDriver_Api.src.Interfaces;
 using FrameworkDriver_Api.src.Projections;
 using FrameworkDriver_Api.Utils;
+using Google.Protobuf.WellKnownTypes;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
@@ -300,6 +301,22 @@ namespace FrameworkDriver_Api.src.Repositories
 
             return BsonSerializer.Deserialize<RegisterObsCliProjection>(doc);
 
+        }
+
+        public async Task<bool> UpdateTotal(decimal total, string idRegister)
+        {
+            var filter = Builders<RegisterModel>.Filter.Eq(x => x.Id, idRegister);
+            var update = Builders<RegisterModel>.Update.Set(x => x.TotalPagar, total);
+            var response = await _context.Registers.UpdateOneAsync(filter, update);
+            return response.ModifiedCount > 0;
+        }
+
+        public async Task<bool> UpdateAntisipo(decimal antisipo, string idRegister)
+        {
+            var filter = Builders<RegisterModel>.Filter.Eq(x => x.Id, idRegister);
+            var update = Builders<RegisterModel>.Update.Set(x => x.Antisipo, antisipo);
+            var response = await _context.Registers.UpdateOneAsync(filter, update);
+            return response.ModifiedCount > 0;
         }
     }
 }

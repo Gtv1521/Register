@@ -1,6 +1,8 @@
+using System.Net;
 using CloudinaryDotNet;
 using CloudinaryDotNet.Actions;
 using FrameworkDriver_Api.src.Models;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 
 namespace FrameworkDriver_Api.src.Utils
@@ -8,11 +10,13 @@ namespace FrameworkDriver_Api.src.Utils
     public class FileUpload
     {
         private readonly Cloudinary _cloudinary;
+        private readonly ILogger<FileUpload> _logger;
 
-        public FileUpload(IOptions<CloudinaryModel> settings)
+        public FileUpload(IOptions<CloudinaryModel> settings, ILogger<FileUpload> logger)
         {
             _cloudinary = new Cloudinary(settings.Value.Url);
             _cloudinary.Api.Secure = true;
+            _logger = logger;
         }
 
         /// <summary>
@@ -91,6 +95,11 @@ namespace FrameworkDriver_Api.src.Utils
 
         public async Task<bool> DeleteMedia(string publicId, string resourceType = "image")
         {
+            if (string.IsNullOrEmpty(publicId))
+            {
+                _logger.LogInformation("EL id de image es null");
+                throw new NullReferenceException("el id de imagen es null");
+            }
             var deleteParams = new DeletionParams(publicId)
             {
                 ResourceType = resourceType == "video"
@@ -100,6 +109,20 @@ namespace FrameworkDriver_Api.src.Utils
 
             var result = await _cloudinary.DestroyAsync(deleteParams);
             return result.Result == "ok";
+        }
+
+        public async Task<bool> ComprobarEnlaceCloudinary(Cloudinary cloudinary)
+        {
+            try
+            {
+                var respuesta = await _cloudinary.PingAsync();
+                return respuesta.StatusCode == HttpStatusCode.OK;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error de enlace: {ex.Message}");
+                return false;
+            }
         }
     }
 }

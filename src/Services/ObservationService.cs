@@ -160,6 +160,12 @@ namespace FrameworkDriver_Api.src.Services
                 throw new Exception("Ha ocurrido el error " + ex.Message);
             }
         }
+
+        public async Task<IEnumerable<ObservationModel>> Filtrar(string IdRegistro, string filter)
+        {
+            return await _observation.FilterObs(IdRegistro, filter);
+        }
+
         // 
         public async Task<ObservationModel> GetClientByIdAsync(string id)
         {

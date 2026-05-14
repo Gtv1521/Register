@@ -12,14 +12,16 @@ using MongoDB.Bson.Serialization.Serializers;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
+using ZstdSharp.Unsafe;
 
 
 namespace FrameworkDriver_Api.src.Services
 {
     public class RegisterService
     {
-        private readonly IRegisters<RegisterModel, RegisterObsCliProjection> _registerRepository;
+        private readonly IRegisters<RegisterModel, RegisterObsCliProjection> _repo;
         private readonly ILoadAllId<ObservationModel> _observation;
+        private readonly ObservationService _obsService;
         private readonly UserService _userService;
         private readonly IHubContext<ReparacionHub> _hubContext;
         private readonly IAddFilter<CompanyModel, CompanyModel> _company;
@@ -34,22 +36,24 @@ namespace FrameworkDriver_Api.src.Services
             UserService userService,
             ILoadAllId<ObservationModel> observation,
             FileUpload cloudinary,
+            ObservationService obsService,
             IAddFilter<CompanyModel, CompanyModel> company
             )
         {
-            _registerRepository = registerRepository;
+            _repo = registerRepository;
             _qrService = qrService;
             _hubContext = hubContext;
             _qr = qr;
             _observation = observation;
             _company = company;
             _cloudinary = cloudinary;
+            _obsService = obsService;
             _userService = userService;
         }
 
         public async Task<string> AddRegisterAsync(RegisterDTO register)
         {
-            var nextRegistroNumber = await _registerRepository.GetNextRegistroNumberAsync();
+            var nextRegistroNumber = await _repo.GetNextRegistroNumberAsync();
             var registro = new RegisterModel
             {
                 IdClient = register.IdClient,
@@ -61,7 +65,7 @@ namespace FrameworkDriver_Api.src.Services
                 TotalPagar = register.TotalPagar,
                 CreatedAt = DateTime.UtcNow, // Guardar en UTC
             };
-            var result = await _registerRepository.CreateAsync(registro);
+            var result = await _repo.CreateAsync(registro);
 
             var BaseUrl = $"{register.UrlRuta}/{result}";
 
@@ -83,31 +87,47 @@ namespace FrameworkDriver_Api.src.Services
         // hace un filtro del cliente y sale una lista de observaciones 
         public async Task<IEnumerable<RegisterObsCliProjection>> Filter(string filter, string idCompany, int page, int size)
         {
-            return await _registerRepository.FilterData(filter, idCompany, page, size);
+            return await _repo.FilterData(filter, idCompany, page, size);
         }
 
         public async Task<IEnumerable<RegisterObsCliProjection>> GetAllRegistersAsync(int pageNumber, int pageSize, string? idCompany = null)
         {
-            return await _registerRepository.GetAllAsync(pageNumber, pageSize, idCompany);
+            return await _repo.GetAllAsync(pageNumber, pageSize, idCompany);
         }
 
         public async Task<RegisterModel> GetRegisterByIdAsync(string id)
         {
-            return await _registerRepository.GetByIdAsync(id);
+            return await _repo.GetByIdAsync(id);
         }
 
         public async Task<bool> UpdateRegisterAsync(string id, RegisterModel register)
         {
-            return await _registerRepository.UpdateAsync(id, register);
+            return await _repo.UpdateAsync(id, register);
         }
 
         public async Task<bool> DeleteRegisterAsync(string id, string empresaId)
         {
-            var observations = await _registerRepository.GetByIdAsync(id);
-            await _cloudinary.DeleteMedia(observations.IdQr, "QR"); // elimina image qr de ruta
-            var response = await _registerRepository.DeleteAsync(id);
+            var register = await _repo.GetByIdAsync(id); // registro
+            if (register.IdQr.Length != 0) await _cloudinary.DeleteMedia(register.IdQr, "QR"); // elimina image qr de ruta
+            var response = await _repo.DeleteAsync(id);
             if (response) await _hubContext.Clients.Group(empresaId).SendAsync("RegistroEliminado", id);
             return response;
+        }
+
+
+        public async Task<bool> UpdateAntisipo(decimal antisipo, string id, string company)
+        {
+            var response = await _qr.UpdateAntisipo(antisipo, id);
+            if (response) await _hubContext.Clients.Group(company).SendAsync("UpdateAntisipo", new { id, antisipo });
+            return response;
+        }
+
+        public async Task<bool> UpdateTotal(decimal total, string id, string company)
+        {
+            var response = await _qr.UpdateTotal(total, id);
+            if (response) await _hubContext.Clients.Group(company).SendAsync("UpdateTotal", new { id, total });
+            return response;
+
         }
 
         public async Task<byte[]> GeneratePDFAsync(string id, int page, int size)
@@ -116,7 +136,7 @@ namespace FrameworkDriver_Api.src.Services
             QuestPDF.Settings.License = LicenseType.Community;
 
             // 1. Obtener datos de la base de datos
-            var register = await _registerRepository.GetByIdAsync(id);
+            var register = await _repo.GetByIdAsync(id);
             var observations = await _observation.GetAllIdAsync(id, page, size);
             var companyData = await _company.GetByIdAsync(register.IdCompany);
 

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Drawing;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using FrameworkDriver_Api.Models;
@@ -50,7 +51,7 @@ namespace FrameworkDriver_Api.src.Controllers
                 throw;
             }
         }
-        
+
         [HttpGet("{id}")]
         public async Task<IActionResult> GetClientById(string id)
         {
@@ -72,6 +73,25 @@ namespace FrameworkDriver_Api.src.Controllers
             catch (System.Exception ex)
             {
                 return Problem(ex.Message);
+            }
+        }
+
+        [HttpGet("filter/{id}")]
+        public async Task<IActionResult> FilterObs(string id, string filter)
+        {
+            if (string.IsNullOrEmpty(id)) return BadRequest("el id es requerido");
+            if (string.IsNullOrEmpty(filter)) return BadRequest("el filtro no puede estar vacio");
+            try
+            {
+                var response = await _observationService.Filtrar(id, filter);
+                if (response.Count() == 0) return NotFound("No hay observaciones");
+                return Ok(response);
+            }
+            catch (System.Exception ex)
+            {
+                _logger.LogInformation("algo fallo {mensaje}", ex.Message);
+                return Problem(ex.Message)  ;
+                throw;
             }
         }
 
