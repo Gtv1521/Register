@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
+using CloudinaryDotNet.Actions;
 using FrameworkDriver_Api.Models;
 using FrameworkDriver_Api.src.Dto;
 using FrameworkDriver_Api.src.Services;
@@ -17,11 +18,13 @@ namespace FrameworkDriver_Api.src.Controllers
     [Authorize]
     public class ClientController : ControllerBase
     {
-        public readonly ClientService _clientService;
+        private readonly ClientService _clientService;
+        private readonly ILogger<ClientController> _logger;
 
-        public ClientController(ClientService clientService)
+        public ClientController(ClientService clientService, ILogger<ClientController> logger)
         {
             _clientService = clientService;
+            _logger = logger;
         }
 
         [HttpPost]
@@ -59,7 +62,7 @@ namespace FrameworkDriver_Api.src.Controllers
             try
             {
                 var filter = await _clientService.FilterClient(correo);
-                if(filter.Count() == 0) return NotFound("Cliente no registrado");
+                if (filter.Count() == 0) return NotFound("Cliente no registrado");
                 return Ok(filter);
             }
             catch (System.Exception ex)
@@ -82,7 +85,8 @@ namespace FrameworkDriver_Api.src.Controllers
                     Phone = client.Phone
                 });
                 if (!update) return NotFound("No se encontro usuario para actualizar data");
-                return NoContent();
+                _logger.LogInformation("Cliente actualizado {id}", id);
+                return Ok(new { success = update });
             }
             catch (System.Exception ex)
             {

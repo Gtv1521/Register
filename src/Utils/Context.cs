@@ -33,6 +33,8 @@ namespace FrameworkDriver_Api.Utils
         public IMongoCollection<ClientModel> Clients => GetCollection<ClientModel>("Clients");
         public IMongoCollection<ObservationModel> Observations => GetCollection<ObservationModel>("Observations");
         public IMongoCollection<SessionModel> Sessions => GetCollection<SessionModel>("Sessions");
+        public IMongoCollection<AdvertenciaModel> Advertencias => GetCollection<AdvertenciaModel>("Advertencias");
+
 
         private IMongoCollection<T> GetCollection<T>(string name)
         {

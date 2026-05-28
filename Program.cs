@@ -113,6 +113,7 @@ builder.Services.AddScoped<ObservationService>();
 builder.Services.AddScoped<SessionService>();
 builder.Services.AddScoped<EmailService>();
 builder.Services.AddScoped<CompanyService>();
+builder.Services.AddScoped<AdvertenciaService>();
 
 builder.Services.AddScoped<IHashPass<UserDto>, HashPassword>();
 //  add services for repositories
@@ -127,6 +128,7 @@ builder.Services.AddScoped<ILoadAllId<ObservationModel>, ObservationRepository>(
 builder.Services.AddScoped<ISession<SessionModel>, SessionRepository>();
 builder.Services.AddScoped<QrInterface, QrService>();
 builder.Services.AddScoped<IUpdateQr, RegisterRepository>();
+builder.Services.AddScoped<ICrud<AdvertenciaModel>, AdvertenciaRepository>();
 //add utils
 builder.Services.AddScoped<FileUpload>();
 

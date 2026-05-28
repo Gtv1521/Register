@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using FrameworkDriver_Api.src.Exceptions;
@@ -69,11 +70,6 @@ namespace FrameworkDriver_Api.src.Repositories
             return response.ModifiedCount > 0;
         }
 
-        // public async Task<UserModel?> LoadByPinAsync(int pin)
-        // {
-        //     return await UniquePinAsync(pin).ContinueWith(task => task.Result.objecto);
-        // }
-
         public async Task<bool> UpdateAsync(string id, UserModel item)
         {
 
@@ -86,11 +82,30 @@ namespace FrameworkDriver_Api.src.Repositories
             return update.ModifiedCount > 0;
         }
 
+        public async Task<bool> UpdateRol(string id, string rol)
+        {
+            var filter = Builders<UserModel>.Filter.Eq(x => x.Id, id);
+            var update = Builders<UserModel>.Update.Set(x => x.Rol, await CompareRol(rol));
+
+            var result = await _context.Users.UpdateOneAsync(filter, update);
+            return result.ModifiedCount > 0;
+        }
+
         //  valida que el mail no exista
         private async Task<(bool, UserModel?)> GetMailAsync(string mail)
         {
             var user = await _context.Users.Find(user => user.Email == mail).FirstOrDefaultAsync();
             return (user != null, user);
+        }
+        private async Task<Role> CompareRol(string rol)
+        {
+            return rol switch
+            {
+                "Super" => Role.Super,
+                "Administrador" => Role.Administrador,
+                "Usuario" => Role.Usuario,
+                _ => Role.Usuario
+            };
         }
     }
 }

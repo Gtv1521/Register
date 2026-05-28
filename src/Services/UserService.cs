@@ -5,7 +5,9 @@ using System.Threading.Tasks;
 using FrameworkDriver_Api.src.Dto;
 using FrameworkDriver_Api.src.Interfaces;
 using FrameworkDriver_Api.src.Models;
+using FrameworkDriver_Api.src.SignalR;
 using FrameworkDriver_Api.src.Utils;
+using Microsoft.AspNetCore.SignalR;
 
 namespace FrameworkDriver_Api.src.Services
 {
@@ -14,11 +16,13 @@ namespace FrameworkDriver_Api.src.Services
         private readonly ICrudWithLoad<UserModel> _user;
         private readonly EmailService _email;
         private readonly CompanyService _companyService;
+        private readonly IHubContext<ReparacionHub> _hub;
 
-        public UserService(ICrudWithLoad<UserModel> user, EmailService email, CompanyService companyService)
+        public UserService(ICrudWithLoad<UserModel> user, IHubContext<ReparacionHub> hub, EmailService email, CompanyService companyService)
         {
             _user = user;
             _email = email;
+            _hub = hub;
             _companyService = companyService;
         }
 
@@ -76,6 +80,14 @@ namespace FrameworkDriver_Api.src.Services
                 Rol = user.Rol
             });
         }
+
+        public async Task<bool> UpdateRol(string id, string rol, string company)
+        {
+            var response = await _user.UpdateRol(id, rol);
+            if (response) await _hub.Clients.Group(company).SendAsync("UpdateRol", new { id, rol });
+            return response;
+        }
+
         public async Task<bool> DeleteUserAsync(string id)
         {
             return await _user.DeleteAsync(id);
