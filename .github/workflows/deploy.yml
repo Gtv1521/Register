@@ -27,4 +27,4 @@ jobs:
           port: 22
           source: "./publish/*"
           target: "/wwwroot/" # Verifica en tu hosting cuál es la carpeta raíz
-          strip_components: true
+          strip_components: 1
