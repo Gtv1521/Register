@@ -2,7 +2,7 @@ name: Deploy ASP.NET Core to MonsterASP
 
 on:
   push:
-    branches: ["master"] # O tu rama principal
+    branches: ["master"]
 
 jobs:
   build-and-deploy:
@@ -13,18 +13,19 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: "10.0.104" # Ajusta a la versión que uses
+          dotnet-version: "10.0.104"
 
       - name: Publish with dotnet
         run: dotnet publish --configuration Release --output ./publish
 
-      - name: Deploy to Server
-        uses: appleboy/scp-action@master
+      - name: Deploy via SFTP to MonsterASP
+        uses: wlixcc/SFTP-Deploy-Action@v1.2.4
         with:
-          host: ${{ secrets.DEPLOY_URL }}
-          username: ${{ secrets.DEPLOY_USER }}
-          password: ${{ secrets.DEPLOY_PASSWORD }}
-          port: 22
-          source: "./publish/*"
-          target: "/wwwroot/" # Verifica en tu hosting cuál es la carpeta raíz
-          strip_components: 1
+          username: 'site71373'  # Usuario correcto
+          server: 'site71373.siteasp.net'  # Hostname correcto
+          port: 22  # Puerto SFTP/SCP
+          password: 'B+p4f2@R%bX7'  # Tu contraseña
+          local_path: './publish/*'
+          remote_path: '/wwwroot/'  # Ruta en el servidor
+          sftp_only: true
+          delete_remote_files: false
