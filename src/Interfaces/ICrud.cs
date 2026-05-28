@@ -2,15 +2,79 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using MongoDB.Driver;
 
 namespace FrameworkDriver_Api.src.Interfaces
 {
-    public interface ICrud<T>
+
+    public interface IReadOne<T>
     {
-        Task<IEnumerable<T>> GetAllAsync(int pageNumber, int pageSize); 
         Task<T> GetByIdAsync(string id);
+    }
+    public interface IReadAll<T>
+    {
+        Task<IEnumerable<T>> GetAllAsync(int pageNumber, int pageSize, string? idCompany = null);
+    }
+    public interface IReadAllId<T>
+    {
+        Task<IEnumerable<T>> GetAllIdAsync(string id, int pageNumber, int pageSize);
+    }
+
+    public interface IFiltered<T>
+    {
+        Task<IEnumerable<T>> GetByFilterAsync(string filter);
+    }
+
+    public interface ICreate<T>
+    {
         Task<string> CreateAsync(T item);
+    }
+    public interface IUpdate<T>
+    {
         Task<bool> UpdateAsync(string id, T item);
+    }
+    public interface IDelete
+    {
         Task<bool> DeleteAsync(string id);
+    }
+
+    public interface ILoadMail<T>
+    {
+        Task<T?> LoadByEmailAsync(string email);
+    }
+    public interface ILoadPin<T>
+    {
+        Task<T?> LoadByPinAsync(int pin);
+    }
+
+    public interface ICrud<T> : IReadOne<T>, IReadAll<T>, ICreate<T>, IUpdate<T>, IDelete
+    { }
+
+    public interface ICrudWithLoad<T> : ICrud<T>, ILoadMail<T>
+    {
+        Task<bool> SaveTheme(string idUser, string theme); // guarda el tema seleccionado por el usuario
+
+    }
+
+    public interface IAddFilter<T, P> : ICrud<T>, IFilter<P>
+    { }
+
+    public interface IFilter<T>
+    {
+        Task<IEnumerable<T>> FilterData(string text);
+
+    }
+
+    public interface IRegisters<T, R> : IReadOne<T>, IReadAll<R>, ICreate<T>, IUpdate<T>, IDelete
+    {
+        Task<string> GetNextRegistroNumberAsync();
+        Task<R> GetOneMasObservation(string id);
+        Task<IEnumerable<R>> FilterData(string? search, string idCompany, int page, int size);
+    }
+
+    public interface ILoadAllId<T> : ICrud<T>, IReadAllId<T>
+    {
+        Task<bool> DeleteManyAsync(string id);
+        Task<IEnumerable<T>> FilterObs(string id, string filter);
     }
 }

@@ -1,0 +1,16 @@
+## .NET
+bin/
+obj/
+publish/
+
+# appsettings.Development.json
+## Visual Studio / Rider
+.vs/
+.idea/
+
+## User-specific
+*.user
+*.suo
+
+## Logs
+*.log

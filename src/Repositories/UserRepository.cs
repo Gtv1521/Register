@@ -2,77 +2,95 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using FrameworkDriver_Api.src.Exceptions;
 using FrameworkDriver_Api.src.Interfaces;
 using FrameworkDriver_Api.src.Models;
 using FrameworkDriver_Api.Utils;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Microsoft.IdentityModel.Tokens.Experimental;
 using Microsoft.VisualBasic;
 using MongoDB.Driver;
+using ZstdSharp.Unsafe;
 
 namespace FrameworkDriver_Api.src.Repositories
 {
-    public class UserRepository : ICrud<UserModel>
+    public class UserRepository : ICrudWithLoad<UserModel>
     {
-        private readonly IMongoCollection<UserModel> _users;
+        private readonly Context _context;
         public UserRepository(Context context)
         {
-            _users = context.GetCollection<UserModel>("Users");
+            _context = context;
         }
 
         public async Task<string> CreateAsync(UserModel item)
         {
-            if (!GetMailAsync(item.email).Result)
+            if (!GetMailAsync(item.Email).Result.Item1)
             {
-                if (!UniquePinAsync(item.pin).Result) return await _users.InsertOneAsync(item).ContinueWith(task => item.Id);
-                else throw new Exception("El pin ya existe debe ser unico");
+                await _context.Users.InsertOneAsync(item);
+                return item.Id;
             }
             else
             {
-                throw new Exception("El mail ya existe");
+                throw new EmailException("El mail ya existe");
             }
         }
 
         public async Task<bool> DeleteAsync(string id)
         {
-            return await _users.DeleteOneAsync(user => user.Id == id)
-                .ContinueWith(task => task.Result.DeletedCount > 0);
+            var delete = await _context.Users.DeleteOneAsync(user => user.Id == id);
+            return delete.DeletedCount > 0;
         }
 
-        public async Task<IEnumerable<UserModel>> GetAllAsync(int pageNumber, int pageSize)
+        public async Task<IEnumerable<UserModel>> GetAllAsync(int pageNumber, int pageSize, string? idCompany)
         {
-            return await _users.Find(_ => true)
+            return await _context.Users.Find(x => x.IdCompany == idCompany)
             .Skip((pageNumber - 1) * pageSize)
             .Limit(pageSize)
-            .ToListAsync()
-            .ContinueWith(task => (IEnumerable<UserModel>)task.Result);
+            .ToListAsync();
         }
 
         public async Task<UserModel> GetByIdAsync(string id)
         {
-            return  await _users.Find(user => user.Id == id).FirstOrDefaultAsync();
+            return await _context.Users.Find(user => user.Id == id).FirstOrDefaultAsync();
         }
+
+        public async Task<UserModel?> LoadByEmailAsync(string email)
+        {
+            var response = await GetMailAsync(email);
+            return response.Item2;
+        }
+
+        public async Task<bool> SaveTheme(string idUser, string theme)
+        {
+            var filter = Builders<UserModel>.Filter.Eq(x => x.Id, idUser);
+            var update = Builders<UserModel>.Update.Set(x => x.Theme, theme);
+            var response = await _context.Users.UpdateOneAsync(filter, update);
+            return response.ModifiedCount > 0;
+        }
+
+        // public async Task<UserModel?> LoadByPinAsync(int pin)
+        // {
+        //     return await UniquePinAsync(pin).ContinueWith(task => task.Result.objecto);
+        // }
 
         public async Task<bool> UpdateAsync(string id, UserModel item)
         {
 
             var updatedUser = Builders<UserModel>.Update
-                .Set(u => u.name, item.name)
-                .Set(u => u.email, item.email)
-                .Set(u => u.pin, item.pin);
+                .Set(u => u.Name, item.Name)
+                .Set(u => u.Email, item.Email)
+                .Set(u => u.Password, item.Password);
 
-            return await _users.UpdateOneAsync(user => user.Id == id, updatedUser)
-                .ContinueWith(task => task.Result.ModifiedCount > 0);
+            var update = await _context.Users.UpdateOneAsync(user => user.Id == id, updatedUser);
+            return update.ModifiedCount > 0;
         }
 
         //  valida que el mail no exista
-        private async Task<bool> GetMailAsync(string mail)
+        private async Task<(bool, UserModel?)> GetMailAsync(string mail)
         {
-            var response = await _users.FindAsync(user => user.email == mail);
-            return response.Any();
-        }
-
-        private async Task<bool> UniquePinAsync(int pin)
-        {
-            return await _users.FindAsync(user => user.pin == pin).ContinueWith(task => task.Result.Any());
+            var user = await _context.Users.Find(user => user.Email == mail).FirstOrDefaultAsync();
+            return (user != null, user);
         }
     }
 }

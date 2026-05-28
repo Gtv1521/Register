@@ -1,0 +1,201 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices.Marshalling;
+using System.Threading.Tasks;
+using CloudinaryDotNet.Actions;
+using FrameworkDriver_Api.src.Dto;
+using FrameworkDriver_Api.src.Exceptions;
+using FrameworkDriver_Api.src.Interfaces;
+using FrameworkDriver_Api.src.Models;
+using FrameworkDriver_Api.src.SignalR;
+using FrameworkDriver_Api.src.Utils;
+using Microsoft.AspNetCore.SignalR;
+using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.IdentityModel.Tokens;
+using SixLabors.ImageSharp.Drawing.Processing;
+using ZstdSharp.Unsafe;
+
+namespace FrameworkDriver_Api.src.Services
+{
+    public class SessionService
+    {
+        private readonly IToken<UserModel> _tokenService;
+        private readonly ICrudWithLoad<UserModel> _userRepository;
+        private readonly ISession<SessionModel> _sessionRepository;
+        private readonly ILogger<SessionService> _logger;
+        private readonly IHubContext<ReparacionHub> _hub;
+        private readonly EmailService _email;
+        public SessionService(
+            IToken<UserModel> tokenService,
+            ICrudWithLoad<UserModel> userRepository,
+            ISession<SessionModel> sessionRepository,
+            EmailService email,
+            ILogger<SessionService> logger,
+            IHubContext<ReparacionHub> hub
+
+            )
+        {
+            _tokenService = tokenService;
+            _userRepository = userRepository;
+            _sessionRepository = sessionRepository;
+            _email = email;
+            _hub = hub;
+            _logger = logger;
+        }
+
+        // Inicia sesion
+        public async Task<(SessionModel data, string Token, string Theme)> LogIn(string email, string password, NavDataDto navData)
+        {
+            var user = await _userRepository.LoadByEmailAsync(email);
+
+            if (user == null)
+                throw new UnauthorizedAccessException("Invalid credentials");
+
+            var verify = Argon2Hasher.Verify(password, user.Password);
+            if (!verify)
+                throw new UnauthorizedAccessException("Invalid credentials");
+
+            var sessions = await _sessionRepository.CountAsync(user.Id);
+            if (sessions >= 3)
+                throw new MaxConnectionException("Máximas conexiones activas alcanzadas (3)", user.Id);
+
+
+
+            if (user != null)
+            {
+                var tokenRefresh = await _tokenService.GenerateRefreshToken(user.Id);
+                var AccesToken = await _tokenService.GenerateToken(user, 2, "user"); // Token valido por 2 minutos
+                var session = new SessionModel
+                {
+                    UserId = user.Id,
+                    IdCompany = user.IdCompany,
+                    StartTime = DateTime.UtcNow,
+                    Status = "Active",
+                    Token = tokenRefresh,
+                    Navegador = navData.Navegador ?? "Desconocido",
+                    VersionNavegador = navData.VersionNavegador ?? "Desconocida",
+                    SistemaOperativo = navData.SistemaOperativo ?? "Desconocido"
+                };
+
+                // Aqui deberia guardarse la sesion en la base de datos
+                var response = await _sessionRepository.LogIn(session);
+                response.IdCompany = user.IdCompany;
+
+                return (response, AccesToken, user.Theme);
+            }
+            else
+            {
+                throw new UnauthorizedAccessException("Invalid credentials");
+            }
+        }
+
+        // Cierra sesion
+        public async Task<bool> LogOut(string sessionId)
+        {
+            return await _sessionRepository.LogOut(sessionId);
+        }
+
+        public async Task<bool> DeleteSessions(string sessionid, string id)
+        {
+            var response = await LogOut(sessionid);
+            if (response) await _hub.Clients.User(id).SendAsync("SesionRevoked", sessionid);
+            _logger.LogInformation($"Sesión {sessionid} revocada para el usuario {id}");
+            return response;
+        }
+
+        // verifica si la sesion esta activa
+        public async Task<bool> IsSessionActive(string sessionId)
+        {
+            return await _sessionRepository.IsSessionActive(sessionId);
+        }
+
+        // Crea un usuario y una sesion
+        public async Task<(SessionModel data, string Token)> SignIn(UserModel user, NavDataDto navData)
+        {
+            var hash = Argon2Hasher.Hash(user.Password);
+            var response = await _userRepository.CreateAsync(new UserModel
+            {
+                Name = user.Name,
+                Email = user.Email,
+                Password = hash,
+                IdCompany = user.IdCompany,
+                Rol = user.Rol
+            });
+            //  se le asigna el nuevo id a los datos para iniciar sesion 
+            user.Id = response;
+
+            // se crea tokens
+            var tokenRefresh = await _tokenService.GenerateRefreshToken(response);
+            var AccesToken = await _tokenService.GenerateToken(user, 2, "user"); // Token valido por 1 hora
+
+            var emailTask = _email.EnviarEmailAsync(
+                user.Email,
+                "Bienvenido a nuestro servicio",
+                $@"<h1>{user.Name}</h1>
+                <br>
+                <article>
+                Hola, Te damos la bienvenida !!! <br>
+                Este es el medio de comunicacion con el cliente donde se le
+                notifica novedades de lo que pasa con el servio que se le brinda.
+                </article>
+                <article>
+                Las funciones que hay son para facilitar tu vida...
+                </article>"
+            );
+            //  se crea la sesion en db
+            var responseSession = await _sessionRepository.SignIn(new SessionModel
+            {
+                UserId = response,
+                StartTime = DateTime.UtcNow,
+                Status = "Active",
+                Token = tokenRefresh,
+                IdCompany = user.IdCompany,
+                Navegador = navData.Navegador ?? "Desconocido",
+                VersionNavegador = navData.VersionNavegador ?? "Desconocida",
+                SistemaOperativo = navData.SistemaOperativo ?? "Desconocido"
+            });
+
+            if (string.IsNullOrEmpty(responseSession.Id))
+            {
+                throw new UserException("User could not be created");
+            }
+
+            return (new SessionModel
+            {
+                Id = responseSession.Id,
+                UserId = responseSession.UserId,
+                IdCompany = user.IdCompany,
+                Token = tokenRefresh
+            }, AccesToken);
+        }
+
+        // Valida si el email ya existe
+        public async Task<bool> ValidEmail(string email)
+        {
+            var response = await _userRepository.LoadByEmailAsync(email);
+            return response != null;
+        }
+
+        public async Task<(string tokenRefresh, string token)> updateToken(string tokenAntiguo, string idUser)
+        {
+            var user = await _userRepository.GetByIdAsync(idUser);
+            var tokenNew = await _tokenService.GenerateRefreshToken(idUser);
+            var tokenSistem = await _tokenService.GenerateToken(user, 2, "user");
+            var response = await _sessionRepository.UpdateTokenRefresh(tokenAntiguo, tokenNew, idUser);
+            if (response != false) return (tokenNew, tokenSistem);
+            throw new FailedException("Fallo actualizacion de token");
+        }
+
+        public async Task<IEnumerable<SessionModel>> OpenSessions(string idUser)
+        {
+            return await _sessionRepository.OpenSessions(idUser);
+        }
+
+        public async Task<string> TokenInvitado()
+        {
+            return await _tokenService.GenerateToken(new UserModel { }, 5, "invitado");
+        }
+    }
+}

@@ -1,38 +1,136 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Reflection.Emit;
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using FrameworkDriver_Api.Models;
+using FrameworkDriver_Api.src.Dto;
 using FrameworkDriver_Api.src.Interfaces;
 using FrameworkDriver_Api.src.Models;
+using FrameworkDriver_Api.src.Projections;
 using FrameworkDriver_Api.src.Repositories;
 using FrameworkDriver_Api.src.Services;
+using FrameworkDriver_Api.src.Utils;
+using FrameworkDriver_Api.src.Utils.Interfaces;
 using FrameworkDriver_Api.Utils;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi;
+using MongoDB.Driver;
+using Scalar.AspNetCore;
+using QuestPDF.Infrastructure;
+using FrameworkDriver_Api.src.SignalR;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 // Configure DataContext with connection strings from appsettings.json
-builder.Services.Configure<DataContext>(builder.Configuration.GetSection("ConnectionStrings"));
+builder.Services.Configure<DataContext>(
+    builder.Configuration.GetSection("ConnectionStrings") ?? throw new Exception("Error al cargar la base de datos desde la configuracion"));
+
+//add cloudinary key on settings
+builder.Services.Configure<CloudinaryModel>(
+    builder.Configuration.GetSection("Cloudinary") ?? throw new Exception("Error al cargar cloudinary desde la configuracion"));
+
+// add WhasappService token on settings
+builder.Services.Configure<WhatsappModel>(
+    builder.Configuration.GetSection("Whatsapp") ?? throw new Exception("Error al cargar whatsapp desde la configuracion"));
+
+// add email Key services
+builder.Services.Configure<EmailModel>(
+    builder.Configuration.GetSection("Email") ?? throw new Exception("Error de server email"));
+
+// ppciones para swagger  
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    });
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ClockSkew = TimeSpan.Zero,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = builder.Configuration["Jwt:Issuer"],
+        ValidAudience = builder.Configuration["Jwt:Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
+    };
+    // varify if token valid
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            if (context.Request.Cookies.ContainsKey("access_token"))
+            {
+                context.Token = context.Request.Cookies["access_token"];
+            }
+            return Task.CompletedTask;
+        },
+
+        OnChallenge = context =>
+        {
+            context.HandleResponse(); // Evitar el manejo predeterminado
+            context.Response.ContentType = "application/json";
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+
+            var response = new { Message = "No autorizado. Token invalido o expirado." };
+            var jsonResponse = JsonSerializer.Serialize(response);
+            return context.Response.WriteAsync(jsonResponse);
+        },
+
+        OnTokenValidated = context =>
+        {
+            var blacklist = context.HttpContext.RequestServices.GetRequiredService<IToken<UserModel>>();
+            var jti = context.Principal?.FindFirst(JwtRegisteredClaimNames.Jti)?.Value;
+
+            if (jti != null && blacklist.IsRevoked(jti))
+            {
+                context.Fail("Token revocado");
+            }
+
+            return Task.CompletedTask;
+        },
+    };
+});
 
 // iniciacion de servicios externos
-builder.Services.AddScoped<Context>();
+builder.Services.AddSingleton<Context>();
+builder.Services.AddSingleton<IIndexInitializer, MongoIndexInitializer>();
 
-// // add services for Services
-// // builder.Services.AddScoped<ClientService>();
+// add services for Services
+builder.Services.AddScoped<ClientService>();
 builder.Services.AddScoped<UserService>();
-// // builder.Services.AddScoped<RegisterService>();
-// // builder.Services.AddScoped<ObservationService>();
+builder.Services.AddScoped<RegisterService>();
+builder.Services.AddScoped<ObservationService>();
+builder.Services.AddScoped<SessionService>();
+builder.Services.AddScoped<RegisterService>();
+builder.Services.AddScoped<ObservationService>();
+builder.Services.AddScoped<SessionService>();
+builder.Services.AddScoped<EmailService>();
+builder.Services.AddScoped<CompanyService>();
 
-// //  add repositories
-// builder.Services.AddScoped<ClientRepository>();
-// builder.Services.AddScoped<UserRepository>();
-// builder.Services.AddScoped<RegisterRepository>();
-// builder.Services.AddScoped<ObservationRepository>();
-
+builder.Services.AddScoped<IHashPass<UserDto>, HashPassword>();
 //  add services for repositories
-builder.Services.AddScoped<ICrud<ClientModel>, ClientRepository>();
-builder.Services.AddScoped<ICrud<UserModel>, UserRepository>();
-builder.Services.AddScoped<ICrud<RegisterModel>, RegisterRepository>();
-builder.Services.AddScoped<ICrud<ObservationModel>, ObservationRepository>();
+builder.Services.AddScoped<IToken<UserModel>, Token>();
 
+// add repositories
+builder.Services.AddScoped<IAddFilter<ClientModel, ClientModel>, ClientRepository>();
+builder.Services.AddScoped<IAddFilter<CompanyModel, CompanyModel>, CompanyRepository>();
+builder.Services.AddScoped<ICrudWithLoad<UserModel>, UserRepository>();
+builder.Services.AddScoped<IRegisters<RegisterModel, RegisterObsCliProjection>, RegisterRepository>();
+builder.Services.AddScoped<ILoadAllId<ObservationModel>, ObservationRepository>();
+builder.Services.AddScoped<ISession<SessionModel>, SessionRepository>();
+builder.Services.AddScoped<QrInterface, QrService>();
+builder.Services.AddScoped<IUpdateQr, RegisterRepository>();
+//add utils
+builder.Services.AddScoped<FileUpload>();
 
+builder.Services.AddScoped<WhatsappInterface, WhatsappUtility>();
 
 // add services for controllers
 builder.Services.AddControllers();
@@ -41,19 +139,104 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+builder.Services.AddOpenApi(options =>
+{
+    options.AddDocumentTransformer((document, context, cancellationToken) =>
+    {
+        document.Components ??= new OpenApiComponents();
+
+        // Usa IOpenApiSecurityScheme en lugar de OpenApiSecurityScheme
+        document.Components.SecuritySchemes ??= new Dictionary<string, IOpenApiSecurityScheme>();
+
+        document.Components.SecuritySchemes["BearerAuth"] = new OpenApiSecurityScheme
+        {
+            Type = SecuritySchemeType.Http,
+            Scheme = "bearer",
+            BearerFormat = "JWT",
+            Description = "JWT Authorization header usando Bearer scheme. Ejemplo: Bearer eyJhbGciOi..."
+        };
+
+        return Task.CompletedTask;
+    });
+});
+
+builder.Services.AddAuthorization();
+
+// Agrega policía cors 
+var allowedOrigins = new[] {
+    "http://localhost:4200",
+    "https://localhost:4200",
+    "https://register.local:4200",
+    "https://8x8d4rkv-4200.use2.devtunnels.ms",
+    "https://8x8d4rkv-5272.use2.devtunnels.ms",
+    "https://8x8d4rkv-5000.use2.devtunnels.ms",
+    "https://blog-notas-front.vercel.app", // produccion en vercel
+    "http://172.19.0.2:4200",
+    "http://localhost:3000",
+};
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFronts", policy =>
+    {
+        policy
+            .WithOrigins(allowedOrigins) // aquí va tu dominio real
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials()
+            .SetIsOriginAllowedToAllowWildcardSubdomains();
+    });
+});
+
+builder.Services.AddSignalR().AddJsonProtocol(options =>
+{
+    options.PayloadSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+});
+
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var initializer = scope.ServiceProvider.GetRequiredService<IIndexInitializer>();
+    await initializer.InitializeIndexesAsync();
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
+
+    app.MapOpenApi();
+    app.MapScalarApiReference(options =>
+    {
+        options.WithTitle("Register-Api")
+           .WithClassicLayout()
+           .ForceDarkMode()
+           .HideSearch()
+           .ShowOperationId()
+           .ExpandAllTags()
+           .SortTagsAlphabetically()
+           .SortOperationsByMethod()
+           .AddPreferredSecuritySchemes("BearerAuth")
+           .PreserveSchemaPropertyOrder();
+        //    .WithProxy("https://api-gateway.company.com")
+        //    .AddServer("https://api.company.com", "Production")
+        //    .AddServer("https://staging-api.company.com", "Staging");
+    });
+
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
 app.UseHttpsRedirection();
 
+app.UseCors("AllowFronts");
+
+app.MapHub<ReparacionHub>("/register");
+
+app.UseAuthentication();
+
 app.UseAuthorization();
 
 app.MapControllers();
-
+QuestPDF.Settings.License = LicenseType.Community;
 app.Run();
