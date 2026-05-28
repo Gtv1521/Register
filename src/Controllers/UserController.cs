@@ -102,7 +102,7 @@ namespace FrameworkDriver_Api.src.Controllers
             var company = User.FindFirst("EmpresaId")?.Value;
             var rol = User.FindFirst(ClaimTypes.Role)?.Value;
 
-            if(string.IsNullOrEmpty(email)) return BadRequest("No hay usuario");
+            if (string.IsNullOrEmpty(email)) return BadRequest("No hay usuario");
             return Ok(new
             {
                 id = userId,
@@ -164,6 +164,27 @@ namespace FrameworkDriver_Api.src.Controllers
             return NoContent();
         }
 
+        [HttpPut("Rol/{id}")]
+        [Authorize(Roles = "Super, Administrador")]
+        public async Task<IActionResult> UpdateRol(string id, string rol)
+        {
+            if (string.IsNullOrEmpty(id)) return BadRequest("El id es requerido");
+            if (string.IsNullOrEmpty(rol)) return BadRequest("El rol es requerido");
+            try
+            {
+                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                var empresaId = User.FindFirst("EmpresaId")?.Value;
+                var response = await _userService.UpdateRol(id, rol, empresaId!);
+                if (!response) return BadRequest("No se pudo actualizar el rol");
+                _logger.LogInformation("El usuario {admin} cambio el rol de {user} a {rol}", userId, id, rol);
+                return Ok(new { update = response });
+            }
+            catch (System.Exception ex)
+            {
+                _logger.LogInformation("No se pudo actualizar rol por: {mesaje}", ex.Message);
+                return Problem(ex.Message);
+            }
+        }
 
         /// <summary>
         /// Borra un usuario 

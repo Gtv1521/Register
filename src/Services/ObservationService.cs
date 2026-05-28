@@ -323,6 +323,5 @@ namespace FrameworkDriver_Api.src.Services
             await _hubContext.Clients.Group(register.IdCompany).SendAsync("RegistroActualizado", new { Id = register.Id, StatusRegister = register.StatusRegister as Status? });
             return response;
         }
-
     }
 }
