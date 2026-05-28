@@ -19,10 +19,11 @@ jobs:
         run: dotnet publish --configuration Release --output ./publish
 
       - name: Deploy to Server
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        uses: appleboy/scp-action@master
         with:
           server: ${{ secrets.DEPLOY_URL }}
           username: ${{ secrets.DEPLOY_USER }}
           password: ${{ secrets.DEPLOY_PASSWORD }}
+          port: 22
           local-dir: ./publish/
           server-dir: /wwwroot/ # Verifica en tu hosting cuál es la carpeta raíz
