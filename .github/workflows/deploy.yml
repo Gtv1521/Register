@@ -1,0 +1,28 @@
+name: Deploy ASP.NET Core to MonsterASP
+
+on:
+  push:
+    branches: ["master"] # O tu rama principal
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: "10.0.104" # Ajusta a la versión que uses
+
+      - name: Publish with dotnet
+        run: dotnet publish --configuration Release --output ./publish
+
+      - name: Deploy to Server
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        with:
+          server: ${{ secrets.DEPLOY_URL }}
+          username: ${{ secrets.DEPLOY_USER }}
+          password: ${{ secrets.DEPLOY_PASSWORD }}
+          local-dir: ./publish/
+          server-dir: /wwwroot/ # Verifica en tu hosting cuál es la carpeta raíz
