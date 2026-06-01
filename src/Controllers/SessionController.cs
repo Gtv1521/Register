@@ -70,8 +70,7 @@ namespace FrameworkDriver_Api.src.Controllers
                 // Refresh Token (largo plazo - almacenado en DB)
                 Response.Cookies.Append("refresh_token", data.Token, cookieOptions);
                 Response.Cookies.Append("X-Has-Session", "true", cookieOptions);
-
-
+                
                 // Headers de seguridad adicionales
                 Response.Headers.Append("X-Content-Type-Options", "nosniff");
                 Response.Headers.Append("X-Frame-Options", "DENY");
@@ -127,9 +126,6 @@ namespace FrameworkDriver_Api.src.Controllers
                 Response.Cookies.Delete("access_token", cookieOptions);
                 Response.Cookies.Delete("refresh_token", cookieOptions);
                 Response.Cookies.Delete("X-Has-Session", cookieOptions);
-
-
-
 
                 return Ok(new { success = result });
             }
