@@ -129,6 +129,8 @@ builder.Services.AddScoped<ISession<SessionModel>, SessionRepository>();
 builder.Services.AddScoped<QrInterface, QrService>();
 builder.Services.AddScoped<IUpdateQr, RegisterRepository>();
 builder.Services.AddScoped<ICrud<AdvertenciaModel>, AdvertenciaRepository>();
+builder.Services.AddScoped<IUpdateUser, UserRepository>();
+
 //add utils
 builder.Services.AddScoped<FileUpload>();
 
@@ -172,7 +174,7 @@ var allowedOrigins = new[] {
     "https://8x8d4rkv-4200.use2.devtunnels.ms",
     "https://8x8d4rkv-5272.use2.devtunnels.ms",
     "https://8x8d4rkv-5000.use2.devtunnels.ms",
-    "https://register-front-alpha.vercel.app/", // produccion en vercel
+    "https://register-front-alpha.vercel.app", // produccion en vercel
     "http://172.19.0.2:4200",
     "http://localhost:3000",
 };

@@ -98,7 +98,7 @@ namespace FrameworkDriver_Api.src.Services
                 if (observation.NotificaEmail)
                 {
                     var imagenesHtml = string.Join("<br>", FileData.Select(url =>
-                        $"<img src=\"{url.Photo}\" alt=\"Evidencia\" style=\"max-width: 600px; height: auto; display: block; margin: 10px 0;\" />"
+                        $"<img src=\"{url.Photo}\" alt=\"Evidencia\" style=\"max-width: 600px; max-height: 400px; display: block; margin: 10px 0;\" />"
                     ));
 
                     await _emailService.EnviarEmailAsync(
@@ -184,62 +184,74 @@ namespace FrameworkDriver_Api.src.Services
 
         public async Task<bool> Update(string id, UpdateObservationDTO item)
         {
+
             try
             {
                 var ObDB = await _observation.GetByIdAsync(id);
-                // borrar los id que fueron eliminados en el front
+                var ListaPhotos = new List<PhotosModel>(ObDB.Photos);
                 if (item.DeletedPhotos != null && item.DeletedPhotos.Any())
                 {
-                    foreach (var data in item.DeletedPhotos)
+                    foreach (var x in item.DeletedPhotos)
                     {
-                        if (await _fileUpload.DeleteMedia(data) == false) _logger.LogInformation("error al borrar el recurso de cloudinary" + data);
-                        var photoRemove = ObDB.Photos.FirstOrDefault(c => c.Id == data);
-                        if (photoRemove != null) ObDB.Photos.Remove(photoRemove);
-
+                        if (await _fileUpload.DeleteMedia(x) == false) _logger.LogInformation("Error al borrar el recurso de cloudinary {id}", x);
+                        var photoRemove = ListaPhotos.FirstOrDefault(c => c.Id == x);
+                        if (photoRemove != null)
+                        {
+                            ListaPhotos.Remove(photoRemove);
+                            _logger.LogInformation("Foto eliminada de la lista: {data}", photoRemove.Id);
+                        }
                     }
                 }
+
                 //guardar las imagenes nuevas
                 if (item.NewPhotos != null && item.NewPhotos.Any())
                 {
                     foreach (var data in item.NewPhotos)
                     {
                         (string? image, string? idImage) = await _fileUpload.UploadMedia(data, "observation");
-                        if (image != null && idImage != null)
+                        if (image != null && idImage != null) ListaPhotos.Add(new PhotosModel
                         {
-                            ObDB.Photos.Add(new PhotosModel
-                            {
-                                Id = idImage,
-                                Photo = image,
-                            });
-                        }
-                        // si existe un error al subir un archivo se notifica.
-                        else
-                        {
-                            _logger.LogInformation("Error al subir el archivo " + data);
-                        }
+                            Id = idImage,
+                            Photo = image,
+                        });
+                        else _logger.LogInformation("Error al subir el archivo " + data);
 
                     }
                 }
+
                 // actualizar la descripcion y el tipo
                 ObDB.Description = item.Description;
 
                 var register = await _register.GetByIdAsync(ObDB.IdRegister);
                 var client = await _client.GetByIdAsync(register.IdClient);
-                //  se envia mensaje a correo
+
+                var actualizarDatos = new ObservationModel
+                {
+                    Id = ObDB.Id,
+                    IdRegister = ObDB.IdRegister,
+                    Type = ObDB.Type,
+                    Description = ObDB.Description,
+                    CreatedAt = ObDB.CreatedAt,
+                    IdUser = ObDB.IdUser,
+                    Photos = ListaPhotos,
+                };
+
+                var response = await _observation.UpdateAsync(id, actualizarDatos);
                 if (item.NotificaEmail)
                 {
-                    var imagenesHtml = string.Join("<br>", ObDB.Photos.Select(url =>
-                        $"<img src=\"{url.Photo}\" alt=\"Evidencia\" style=\"max-width: 600px; height: auto; display: block; margin: 10px 0;\" />"
+                    var imagenesHtml = string.Join("<br>", ListaPhotos.Select(url =>
+                        $"<img src=\"{url.Photo}\" alt=\"Evidencia\" style=\"max-width: 600px; max-height: 400px; display: block; mlargin: 10px 0;\" />"
                     ));
 
                     await _emailService.EnviarEmailAsync(
                         client.Email,
-                        "Actualizacion",
+                        $"Actualización de registro {register.Id}",
                         $@"
                             <html>
-                            <body style='font-family: Arial, sans-serif;'>
-                                <h2>Actualización de tu registro</h2>
+                            <body style='font-family: Arial, sans-serif; padding: 20px;'>
+                                <h2>Se actualizo registro.</h2>
                                 <h4>Buen día</h4>
+                                <p>Se ha actualizado el registro {register.Id}.</p>
                                 <p><strong>Estado: </strong> {register.StatusRegister}</p>
                                 <p><strong>Observación: </strong></p>
                                 <p>{item.Description.Replace("\n", "<br>")}</p>
@@ -248,30 +260,26 @@ namespace FrameworkDriver_Api.src.Services
                                 {imagenesHtml}
 
                                 <hr>
-                                <p>Gracias por usar nuestro sistema.</p>
+                                <p>Gracias por usar nuestro servicio.</p>
                             </body>
                             </html>"
                     );
                 }
 
-
                 //  se envia mensaje a whatsapp
                 if (item.NotificaWhatsapp)
                 {
-                    //  *🔹 Actualización de Registro*
                     var mensajeWhatsapp = $"*Actualización de Registro*\n\n*Estado:* {register.StatusRegister}.\n\n*Observación:* \n{item.Description}.\n\n*Cliente notificado*";
-                    // envia mensaje a whatsapp
                     await _wh.SendMenssageAsync(mensajeWhatsapp, client.Phone, ObDB.Photos);
                 }
 
-                return await _observation.UpdateAsync(id, ObDB);
+                await _hubContext.Clients.Group(register.IdCompany).SendAsync("ObservacionActualizada", actualizarDatos);
+                return response;
             }
             catch (System.Exception)
             {
-
                 throw new Exception("Error al actualizar la observacion.");
             }
-
         }
 
         public async Task<bool> DeleteXId(string id, string empresaId)

@@ -1,13 +1,19 @@
 using System;
 using System.Collections.Generic;
+using System.Configuration;
+using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
+using System.Security.Permissions;
 using System.Threading.Tasks;
 using FrameworkDriver_Api.src.Dto;
 using FrameworkDriver_Api.src.Interfaces;
 using FrameworkDriver_Api.src.Models;
 using FrameworkDriver_Api.src.SignalR;
 using FrameworkDriver_Api.src.Utils;
+using Isopoh.Cryptography.Argon2;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.VisualBasic;
 
 namespace FrameworkDriver_Api.src.Services
 {
@@ -17,12 +23,20 @@ namespace FrameworkDriver_Api.src.Services
         private readonly EmailService _email;
         private readonly CompanyService _companyService;
         private readonly IHubContext<ReparacionHub> _hub;
+        private readonly IUpdateUser _updateUser;
 
-        public UserService(ICrudWithLoad<UserModel> user, IHubContext<ReparacionHub> hub, EmailService email, CompanyService companyService)
+        public UserService(
+            ICrudWithLoad<UserModel> user,
+            IHubContext<ReparacionHub> hub,
+            EmailService email,
+            IUpdateUser updateUser,
+            CompanyService companyService
+            )
         {
             _user = user;
             _email = email;
             _hub = hub;
+            _updateUser = updateUser;
             _companyService = companyService;
         }
 
@@ -96,6 +110,40 @@ namespace FrameworkDriver_Api.src.Services
         public async Task<bool> SaveTheme(string idUser, string theme)
         {
             return await _user.SaveTheme(idUser, theme);
+        }
+
+        public async Task<bool> updateName(string id, string name)
+        {
+            var response = await _updateUser.ActualizaName(id, name);
+            if (response) await _hub.Clients.User(id).SendAsync("ChangeName", name);
+
+
+            return response;
+        }
+
+        public async Task<bool> UpdateMail(string id, string mail)
+        {
+            var response = await _updateUser.ActualizaMail(id, mail);
+            if (response) await _hub.Clients.User(id).SendAsync("ChangeMail", mail);
+            return response;
+        }
+
+        public async Task<bool> UpdatePassword(string id, string password)
+        {
+            var response = await _updateUser.ActualizaPassword(id, Argon2Hasher.Hash(password));
+            if (response)
+            {
+                await _hub.Clients.User(id).SendAsync("Change Pass", new { message = "Actuallizado", state = 200 });
+                var user = await GetUserByIdAsync(id);
+                await _email.EnviarEmailAsync(user.Email, $@"Notificación.", $@"<h1>Cambio de contraseña</h1>
+                    <br>
+                    <article>
+                    Hola, <strong>{user.Name}</strong> !!! <br>
+                    Te notificamos que tu constraseña a sido cambiada con exito!.
+                    </article>
+                    ");
+            }
+            return response;
         }
     }
 }

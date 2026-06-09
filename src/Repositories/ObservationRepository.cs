@@ -81,10 +81,8 @@ namespace FrameworkDriver_Api.src.Repositories
             if (!ObjectId.TryParse(id, out var objectId)) throw new ArgumentException("ID inválido");
 
             var filter = Builders<ObservationModel>.Filter.Eq(x => x.Id, id);
-            //var update = Builders<ObservationModel>.Update.Set(x => x.Description, item.Description);
-
             var result = await _context.Observations.ReplaceOneAsync(filter, item);
-            //await _context.Observations.UpdateOneAsync(filter, update).ContinueWith(task => task.Result.ModifiedCount > 0);
+
             return result.ModifiedCount > 0;
         }
     }

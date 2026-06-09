@@ -15,10 +15,12 @@ namespace FrameworkDriver_Api.src.Controllers
     public class CompanyController : ControllerBase
     {
         private readonly CompanyService _companyService;
+        private readonly ILogger<CompanyController> _logger;
 
-        public CompanyController(CompanyService companyService)
+        public CompanyController(CompanyService companyService, ILogger<CompanyController> logger)
         {
             _companyService = companyService;
+            _logger = logger;
         }
 
         [HttpPost]
@@ -82,20 +84,23 @@ namespace FrameworkDriver_Api.src.Controllers
             }
         }
 
-        [HttpPut("{id}")]
+        [HttpPost("{id}")]
         [Authorize(Roles = "Administrador, Super")]
-        public async Task<IActionResult> UpdateCompany(string id, [FromBody] CompanyModel company)
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> UpdateCompany(string id, [FromForm] CompanyDTO company, [FromQuery] bool updateLogo = false)
         {
-            if (id == null) return BadRequest("id no puede ser nulo");
+            if (string.IsNullOrEmpty(id)) return BadRequest("id no puede ser nulo");
             if (!ModelState.IsValid) return BadRequest(ModelState.Values.SelectMany(v => v.Errors));
             try
             {
-                var updated = await _companyService.UpdateCompanyAsync(id, company);
+                _logger.LogInformation("Updating company with id: {CompanyId}", id);
+                var updated = await _companyService.UpdateCompanyAsync(id, company, updateLogo);
                 if (!updated) return BadRequest("Company could not be updated");
-                return Ok("Company updated successfully");
+                return Ok(new { success = updated, message = "Company updated successfully" });
             }
             catch (System.Exception ex)
             {
+                _logger.LogError(ex, "Error occurred while updating company with id: {CompanyId}", id);
                 return BadRequest(ex.Message);
             }
         }

@@ -16,7 +16,7 @@ using ZstdSharp.Unsafe;
 
 namespace FrameworkDriver_Api.src.Repositories
 {
-    public class UserRepository : ICrudWithLoad<UserModel>
+    public class UserRepository : ICrudWithLoad<UserModel>, IUpdateUser
     {
         private readonly Context _context;
         public UserRepository(Context context)
@@ -106,6 +106,33 @@ namespace FrameworkDriver_Api.src.Repositories
                 "Usuario" => Role.Usuario,
                 _ => Role.Usuario
             };
+        }
+
+        public async Task<bool> ActualizaPassword(string id, string pass)
+        {
+            var filter = Builders<UserModel>.Filter.Eq(x => x.Id, id);
+            var update = Builders<UserModel>.Update.Set(x => x.Password, pass);
+
+            var response = await _context.Users.UpdateOneAsync(filter, update);
+            return response.ModifiedCount > 0;
+        }
+
+        public async Task<bool> ActualizaName(string id, string name)
+        {
+            var filter = Builders<UserModel>.Filter.Eq(x => x.Id, id);
+            var update = Builders<UserModel>.Update.Set(x => x.Name, name);
+
+            var response = await _context.Users.UpdateOneAsync(filter, update);
+            return response.ModifiedCount > 0;
+        }
+
+        public async Task<bool> ActualizaMail(string id, string mail)
+        {
+            var filter = Builders<UserModel>.Filter.Eq(x => x.Id, id);
+            var update = Builders<UserModel>.Update.Set(x => x.Email, mail);
+
+            var response = await _context.Users.UpdateOneAsync(filter, update);
+            return response.ModifiedCount > 0;
         }
     }
 }
