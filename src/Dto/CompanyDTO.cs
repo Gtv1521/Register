@@ -20,7 +20,7 @@ namespace FrameworkDriver_Api.src.Dto
         [Required]
         public string Address { get; set; } = null!;
 
-        public IFormFile Image { get; set; } = null!;
+        public IFormFile? Image { get; set; } = null!;
 
         public string? NIT { get; set; }
     }

@@ -13,10 +13,14 @@ namespace FrameworkDriver_Api.src.Repositories
     public class CompanyRepository : IAddFilter<CompanyModel, CompanyModel>
     {
         private readonly Context _context;
+        private readonly ILogger<CompanyRepository> _logger;
 
-        public CompanyRepository(Context context)
+        public CompanyRepository(Context context
+            , ILogger<CompanyRepository> logger
+            )
         {
             _context = context;
+            _logger = logger;
         }
 
         public async Task<string> CreateAsync(CompanyModel item)
@@ -54,16 +58,11 @@ namespace FrameworkDriver_Api.src.Repositories
 
         public async Task<bool> UpdateAsync(string id, CompanyModel item)
         {
-            var filter = Builders<CompanyModel>.Filter.Eq(c => c.Id, id);
+            _logger.LogInformation("Attempting to update company with id: {CompanyId}", id);
+            if (!ObjectId.TryParse(id, out var objectId)) throw new ArgumentException("ID inválido");
+            var filter = Builders<CompanyModel>.Filter.Eq(c => c.Id, item.Id);
 
-            var update = Builders<CompanyModel>.Update
-                .Set(c => c.Name, item.Name)
-                .Set(c => c.Email, item.Email)
-                .Set(c => c.Phone, item.Phone)
-                .Set(c => c.Address, item.Address)
-                .Set(c => c.NIT, item.NIT);
-
-            var result = await _context.Companies.UpdateOneAsync(filter, update);
+            var result = await _context.Companies.ReplaceOneAsync(filter, item);
             return result.ModifiedCount > 0;
         }
     }

@@ -98,7 +98,7 @@ namespace FrameworkDriver_Api.src.Services
                 if (observation.NotificaEmail)
                 {
                     var imagenesHtml = string.Join("<br>", FileData.Select(url =>
-                        $"<img src=\"{url.Photo}\" alt=\"Evidencia\" style=\"max-width: 600px; height: auto; display: block; margin: 10px 0;\" />"
+                        $"<img src=\"{url.Photo}\" alt=\"Evidencia\" style=\"max-width: 600px; max-height: 400px; display: block; margin: 10px 0;\" />"
                     ));
 
                     await _emailService.EnviarEmailAsync(
@@ -189,7 +189,6 @@ namespace FrameworkDriver_Api.src.Services
             {
                 var ObDB = await _observation.GetByIdAsync(id);
                 var ListaPhotos = new List<PhotosModel>(ObDB.Photos);
-                // borrar los id que fueron eliminados en el front
                 if (item.DeletedPhotos != null && item.DeletedPhotos.Any())
                 {
                     foreach (var x in item.DeletedPhotos)
@@ -238,16 +237,15 @@ namespace FrameworkDriver_Api.src.Services
                 };
 
                 var response = await _observation.UpdateAsync(id, actualizarDatos);
-                //  se envia mensaje a correo
                 if (item.NotificaEmail)
                 {
                     var imagenesHtml = string.Join("<br>", ListaPhotos.Select(url =>
-                        $"<img src=\"{url.Photo}\" alt=\"Evidencia\" style=\"max-width: 600px; height: auto; display: block; margin: 10px 0;\" />"
+                        $"<img src=\"{url.Photo}\" alt=\"Evidencia\" style=\"max-width: 600px; max-height: 400px; display: block; mlargin: 10px 0;\" />"
                     ));
 
                     await _emailService.EnviarEmailAsync(
                         client.Email,
-                        $"Actualización De registro {register.Id}",
+                        $"Actualización de registro {register.Id}",
                         $@"
                             <html>
                             <body style='font-family: Arial, sans-serif; padding: 20px;'>
@@ -275,15 +273,13 @@ namespace FrameworkDriver_Api.src.Services
                     await _wh.SendMenssageAsync(mensajeWhatsapp, client.Phone, ObDB.Photos);
                 }
 
+                await _hubContext.Clients.Group(register.IdCompany).SendAsync("ObservacionActualizada", actualizarDatos);
                 return response;
-
-
             }
             catch (System.Exception)
             {
                 throw new Exception("Error al actualizar la observacion.");
             }
-
         }
 
         public async Task<bool> DeleteXId(string id, string empresaId)

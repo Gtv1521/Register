@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -8,6 +9,8 @@ using FrameworkDriver_Api.src.Models;
 using FrameworkDriver_Api.src.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
+using MongoDB.Bson.IO;
 using ZstdSharp.Unsafe;
 
 namespace FrameworkDriver_Api.src.Controllers
@@ -235,6 +238,69 @@ namespace FrameworkDriver_Api.src.Controllers
             {
                 _logger.LogError(ex, "Error saving theme");
                 return StatusCode(500, new { success = false, message = "Error interno del servidor" });
+            }
+        }
+
+        [HttpPut("up_mail/{id}")]
+        public async Task<ActionResult> UpdateMail([FromRoute] string id, [FromQuery] string mail)
+        {
+            if (string.IsNullOrEmpty(id) && string.IsNullOrEmpty(mail)) return BadRequest("No envio todos los datos");
+            try
+            {
+                var response = await _userService.UpdateMail(id, mail);
+                if (!response) return BadRequest("No se puede actualizar el correo");
+                return Ok(new { success = response });
+            }
+            catch (System.Exception ex)
+            {
+                _logger.LogInformation("Algo salio mal: {error}", ex.Message);
+                return Problem(
+                    detail: "No se pudo procesar la solicitud en este momento. Intente más tarde.",
+                    title: "Error Interno del Servidor",
+                    statusCode: 500
+                );
+            }
+        }
+
+        [HttpPut("up_name/{id}")]
+        public async Task<IActionResult> UpdateName([FromRoute] string id, [FromQuery] string name)
+        {
+            if (string.IsNullOrEmpty(id) && string.IsNullOrEmpty(name)) return BadRequest("No se recibe valores vacios");
+            try
+            {
+                var response = await _userService.updateName(id, name);
+                if (!response) return BadRequest("No se puedo actualizar nombre");
+                return Ok(new { success = response });
+            }
+            catch (System.Exception ex)
+            {
+                _logger.LogInformation("algo salio mal: {error}", ex.Message);
+                return Problem(
+                    detail: "No se pudo procesar la solicitud en este momento. Intente más tarde.",
+                    title: "Error Interno del Servidor",
+                    statusCode: 500
+                );
+            }
+        }
+
+        [HttpPut("up_password/{id}")]
+        public async Task<IActionResult> UpdatePassword([FromRoute] string id, [FromQuery] string password)
+        {
+            if (string.IsNullOrEmpty(id) && string.IsNullOrEmpty(password)) return BadRequest("No se recibe valores vacios");
+            try
+            {
+                var response = await _userService.UpdatePassword(id, password);
+                if (!response) return BadRequest("No se pudo actualizar contraseña");
+                return Ok(new { success = response });
+            }
+            catch (System.Exception ex)
+            {
+                _logger.LogInformation("Algo salio mal: {error}", ex.Message);
+                return Problem(
+                    detail: "No se pudo procesar la solicitud en este momento. Intente más tarde.",
+                    title: "Error Interno del Servidor",
+                    statusCode: 500
+                );
             }
         }
     }

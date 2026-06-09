@@ -129,6 +129,8 @@ builder.Services.AddScoped<ISession<SessionModel>, SessionRepository>();
 builder.Services.AddScoped<QrInterface, QrService>();
 builder.Services.AddScoped<IUpdateQr, RegisterRepository>();
 builder.Services.AddScoped<ICrud<AdvertenciaModel>, AdvertenciaRepository>();
+builder.Services.AddScoped<IUpdateUser, UserRepository>();
+
 //add utils
 builder.Services.AddScoped<FileUpload>();
 
