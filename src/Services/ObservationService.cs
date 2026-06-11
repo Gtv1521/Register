@@ -103,12 +103,12 @@ namespace FrameworkDriver_Api.src.Services
 
                     await _emailService.EnviarEmailAsync(
                         client.Email,
-                        "Actualizacion",
+                        $"Nueva observación: {register.RegistroNumber}",
                         $@"
                             <html>
                             <body style='font-family: Arial, sans-serif;'>
-                                <h2>Actualización de tu registro</h2>
-                                <h4>Notificacion de servicio.</h4>
+                                <h2>Creacion de registro.</h2>
+                                <h4>{register.RegistroNumber}</h4>
                                 <p><strong>Estado: </strong> {register.StatusRegister}</p>
                                 <p><strong>Observación:</strong></p>
                                 <p>{observation.Description.Replace("\n", "<br>")}</p>

@@ -34,6 +34,7 @@ namespace FrameworkDriver_Api.Utils
         public IMongoCollection<ObservationModel> Observations => GetCollection<ObservationModel>("Observations");
         public IMongoCollection<SessionModel> Sessions => GetCollection<SessionModel>("Sessions");
         public IMongoCollection<AdvertenciaModel> Advertencias => GetCollection<AdvertenciaModel>("Advertencias");
+        public IMongoCollection<RestartPassword> RestartPassword => GetCollection<RestartPassword>("RestartPassword");
 
 
         private IMongoCollection<T> GetCollection<T>(string name)

@@ -4,10 +4,12 @@ using System.Linq;
 using System.Runtime.InteropServices.Marshalling;
 using System.Threading.Tasks;
 using CloudinaryDotNet.Actions;
+using DnsClient.Protocol;
 using FrameworkDriver_Api.src.Exceptions;
 using FrameworkDriver_Api.src.Interfaces;
 using FrameworkDriver_Api.src.Models;
 using FrameworkDriver_Api.Utils;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.VisualBasic;
 using MongoDB.Bson.Serialization.Conventions;
 using MongoDB.Driver;
@@ -115,6 +117,34 @@ namespace FrameworkDriver_Api.src.Repositories
         private void DeleteSessions(string idUser)
         {
             _context.Sessions.DeleteOneAsync(x => x.Id == idUser);
+        }
+
+        public async Task<string> Added(string email, string token)
+        {
+            var insert = new RestartPassword
+            {
+                Email = email,
+                Token = token,
+            };
+            await _context.RestartPassword.InsertOneAsync(insert);
+            return insert.Id;
+
+        }
+
+        public async Task<bool> ValidaToken(string email, string token)
+        {
+            var filter = Builders<RestartPassword>.Filter.And(
+                Builders<RestartPassword>.Filter.Eq(x => x.Email, email),
+                Builders<RestartPassword>.Filter.Eq(x => x.Token, token)
+            );
+
+            var valida = await _context.RestartPassword.Find(filter).FirstOrDefaultAsync();
+
+            if (DateTime.UtcNow > valida.CreateAd.AddHours(1))
+            {
+                throw new TimeoutException("El tiempo del token expiro");
+            }
+            return true;
         }
     }
 }

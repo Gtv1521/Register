@@ -14,5 +14,7 @@ namespace FrameworkDriver_Api.src.Interfaces
         Task<bool> UpdateTokenRefresh(string token, string tokenNew, string id); // actualiza token de refresh
         Task<bool> IsSessionActive(string sessionId); // verifica si la sesion esta activa
         Task<long> CountAsync(string Id); // cuenta sesiones por usuario
+        Task<string> Added(string email, string token); // envia un correo  para cambiar la contraseña
+        Task<bool> ValidaToken(string email, string token);
     }
 }

@@ -15,6 +15,7 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.IdentityModel.Tokens;
 using SixLabors.ImageSharp.Drawing.Processing;
+using ZstdSharp;
 using ZstdSharp.Unsafe;
 
 namespace FrameworkDriver_Api.src.Services
@@ -24,6 +25,7 @@ namespace FrameworkDriver_Api.src.Services
         private readonly IToken<UserModel> _tokenService;
         private readonly ICrudWithLoad<UserModel> _userRepository;
         private readonly ISession<SessionModel> _sessionRepository;
+        private readonly UserService _upUser;
         private readonly ILogger<SessionService> _logger;
         private readonly IHubContext<ReparacionHub> _hub;
         private readonly EmailService _email;
@@ -32,6 +34,7 @@ namespace FrameworkDriver_Api.src.Services
             ICrudWithLoad<UserModel> userRepository,
             ISession<SessionModel> sessionRepository,
             EmailService email,
+            UserService upUser,
             ILogger<SessionService> logger,
             IHubContext<ReparacionHub> hub
 
@@ -42,6 +45,7 @@ namespace FrameworkDriver_Api.src.Services
             _sessionRepository = sessionRepository;
             _email = email;
             _hub = hub;
+            _upUser = upUser;
             _logger = logger;
         }
 
@@ -196,6 +200,50 @@ namespace FrameworkDriver_Api.src.Services
         public async Task<string> TokenInvitado()
         {
             return await _tokenService.GenerateToken(new UserModel { }, 5, "invitado");
+        }
+
+
+        public async Task<bool> SendToMail(string email, string ruta)
+        {
+            // validar email
+            var response = await ValidEmail(email);
+            if (!response) throw new NotFoundException("Email no encontrado");
+            var user = await _userRepository.LoadByEmailAsync(email);
+
+            // crear token
+            var token = await TokenInvitado();
+
+            // guardar token en db
+            var insert = await _sessionRepository.Added(email, token);
+
+            // envair mail
+            return await _email.EnviarEmailAsync(
+                email, "Restablecer contraseña", $@"
+                <h1>{user?.Name}</h1>
+                <h4>Restablecer contraseña</h4>
+                <section>
+                Se pidio cambio de contraseña, si solicitaste este servicio puedes seguir en el siguiente link, si no es asi solo puedes ignorar este correo
+                </section>    
+                </br>
+                <section>
+                 <a href='{ruta}?id={user?.Id}&token={token}'>Cambiar contraseña</a>
+                </section>
+                "
+            );
+        }
+
+        public async Task<bool> ChangePass(string id, string password, string token)
+        {
+            var user = await _userRepository.GetByIdAsync(id);
+            var valida = await _sessionRepository.ValidaToken(user.Email, token);
+
+            if (valida)
+            {
+                var change = await _upUser.UpdatePassword(id, password);
+                System.Console.WriteLine(change);
+                return change;
+            }
+            return false;
         }
     }
 }

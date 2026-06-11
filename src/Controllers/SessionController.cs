@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection.Metadata.Ecma335;
 using System.Threading.Tasks;
 using FrameworkDriver_Api.src.Dto;
@@ -70,7 +71,7 @@ namespace FrameworkDriver_Api.src.Controllers
                 // Refresh Token (largo plazo - almacenado en DB)
                 Response.Cookies.Append("refresh_token", data.Token, cookieOptions);
                 Response.Cookies.Append("X-Has-Session", "true", cookieOptions);
-                
+
                 // Headers de seguridad adicionales
                 Response.Headers.Append("X-Content-Type-Options", "nosniff");
                 Response.Headers.Append("X-Frame-Options", "DENY");
@@ -359,6 +360,48 @@ namespace FrameworkDriver_Api.src.Controllers
             {
                 _logger.LogError(ex, "Error during token revocation");
                 return StatusCode(500, "Internal server error" + ex.Message);
+            }
+        }
+
+        [HttpGet("restart_password")]
+        public async Task<IActionResult> ResetPassword([FromQuery] string email, [FromQuery] string ruta)
+        {
+            if (string.IsNullOrEmpty(email)) return BadRequest("el email es requerido");
+            try
+            {
+                var response = await _sessionService.SendToMail(email, ruta);
+                if (!response) return BadRequest("No se puedo enviar el correo");
+                return Ok(response);
+            }
+            catch (NotFoundException respuesta)
+            {
+                _logger.LogInformation("{mensaje}", respuesta);
+                return NotFound(respuesta);
+            }
+            catch (Exception ex)
+            {
+                return Problem("algo salio mal {ex}", ex.Message);
+            }
+        }
+
+        [HttpPost("change_password/{id}")]
+        public async Task<IActionResult> ChangePassword([FromRoute] string id, [FromQuery] string password, [FromQuery] string token)
+        {
+            if (string.IsNullOrEmpty(password)) return BadRequest("La constraseña no puede estar vacia");
+            if (string.IsNullOrEmpty(token)) return BadRequest("El token no puede estar vacio");
+            try
+            {
+                var response = await _sessionService.ChangePass(id, password, token);
+                if (!response) return BadRequest("No se pudo actualizar la contraseña");
+                return Ok(new { success = response });
+            }
+            catch (TimeoutException ex)
+            {
+                return Unauthorized(new { mensaje = ex.Message });
+            }
+            catch (System.Exception ex)
+            {
+                return Problem("algo fallo: {ex}", ex.Message);
             }
         }
 
