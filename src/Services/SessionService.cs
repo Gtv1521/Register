@@ -240,7 +240,6 @@ namespace FrameworkDriver_Api.src.Services
             if (valida)
             {
                 var change = await _upUser.UpdatePassword(id, password);
-                System.Console.WriteLine(change);
                 return change;
             }
             return false;

@@ -140,7 +140,7 @@ namespace FrameworkDriver_Api.src.Repositories
 
             var valida = await _context.RestartPassword.Find(filter).FirstOrDefaultAsync();
 
-            if (DateTime.UtcNow > valida.CreateAd.AddHours(1))
+            if (DateTime.UtcNow >  valida.CreateAd.AddHours(1)  )
             {
                 throw new TimeoutException("El tiempo del token expiro");
             }
