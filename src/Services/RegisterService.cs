@@ -61,6 +61,7 @@ namespace FrameworkDriver_Api.src.Services
                 IdUser = register.IdUser,
                 Tecnico = await _userService.GetUserByIdAsync(register.IdUser).ContinueWith(t => t.Result?.Name ?? "Desconocido"),
                 RegistroNumber = nextRegistroNumber,
+                Modelo = register.Modelo,
                 Antisipo = register.Antisipo,
                 TotalPagar = register.TotalPagar,
                 CreatedAt = DateTime.UtcNow, // Guardar en UTC

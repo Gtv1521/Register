@@ -157,7 +157,7 @@ namespace FrameworkDriver_Api.src.Repositories
                 .ToList();
         }
 
-        public async Task<IEnumerable<RegisterObsCliProjection>> GetAllAsync(int pageNumber, int pageSize, string? idCompany = null)
+        public async Task<IEnumerable<RegisterObsCliProjection>> GetAllAsync(int pageNumber = 40, int pageSize = 1, string? idCompany = null)
         {
             var skip = (pageNumber - 1) * pageSize;
 

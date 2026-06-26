@@ -13,6 +13,7 @@ namespace FrameworkDriver_Api.src.Dto
         public string IdUser { get; set; } = string.Empty; // referencia al usuario que crea el registro
         public decimal Antisipo { get; set; } = 0;
         public decimal TotalPagar { get; set; } = 0;
+        public string Modelo { get; set; } = string.Empty;
         public string UrlRuta { get; set; } = string.Empty;
         public string RegistroNumber { get; set; } = string.Empty; // Número incremental formateado (ej: REG-000001)
     }

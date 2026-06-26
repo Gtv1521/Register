@@ -33,7 +33,8 @@ namespace FrameworkDriver_Api.Models
 
         [BsonRepresentation(BsonType.Decimal128)]
         public decimal TotalPagar { get; set; } = 0; // total a pagar por el cliente
-
+        [Required]
+        public string Modelo { get; set; } = string.Empty;
         public string IdQr { get; set; } = string.Empty;
         public DateTime CreatedAt { get; set; } // fecha de creacion el dia que se recive el/los equipos
     }
